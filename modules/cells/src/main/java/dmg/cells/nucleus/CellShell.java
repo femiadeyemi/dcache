@@ -777,16 +777,21 @@ public class CellShell extends CommandInterpreter
             description = "")
     public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
-        @Argument(index = 0, valueSpec = "destinationCell", metaVar = "destinationCell")
+        @Argument(index = 0, valueSpec = "destinationCell")
         CellPath destination;
 
-        @Argument(index = 1, valueSpec = "packetSize", metaVar = "packetSize", required = false)
+        @Argument(index = 1, valueSpec = "packetSize", required = false)
         int size;
 
-        @Argument(index = 2, valueSpec = "numOfPackets", metaVar = "numOfPackets", required = false)
+        @Argument(index = 2, valueSpec = "numOfPackets", required = false)
         int packets = 1;
 
-        @Option(name = "timeout", metaVar = "millis")
+        @Option(name = "timeout", metaVar = "millis",
+                usage = "Specify a timeout value when executing \n" +
+                        "the ping command. This adjusts the amount of time,\n " +
+                        "in milliseconds, that ping waits for each reply.\n" +
+                        " If you don't use the -timeout option, the default \n" +
+                        "timeout value is used which is 1000, or 1 seconds.")
         int timeout = 1000;
 
         private int count;
