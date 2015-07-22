@@ -773,16 +773,17 @@ public class CellShell extends CommandInterpreter
 
    }
 
-    @Command(name = "ping")
-    class Pingcommand extends DelayedReply implements Callable<Pingcommand>
+    @Command(name = "ping", hint = "send a message to a target and wait for a response",
+            description = "")
+    public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
-        @Argument(index = 0, metaVar = "destinationCell")
+        @Argument(index = 0, valueSpec = "destinationCell", metaVar = "destinationCell")
         CellPath destination;
 
-        @Argument(index = 1, metaVar = "packetSize", required = false)
+        @Argument(index = 1, valueSpec = "packetSize", metaVar = "packetSize", required = false)
         int size;
 
-        @Argument(index = 2, metaVar = "numOfPackets", required = false)
+        @Argument(index = 2, valueSpec = "numOfPackets", metaVar = "numOfPackets", required = false)
         int packets = 1;
 
         @Option(name = "timeout", metaVar = "millis")
@@ -793,7 +794,7 @@ public class CellShell extends CommandInterpreter
         private final Stopwatch sw = Stopwatch.createUnstarted();
 
         @Override
-        public Pingcommand call() throws Exception
+        public PingCommand call() throws Exception
         {
             sw.start();
             ping();
