@@ -765,13 +765,32 @@ public class CellShell extends CommandInterpreter
    //
    //   sleep
    //
-   public static final String hh_sleep = "<secondsToSleep>" ;
+   @Command(name = "sleep", hint = "sleep for the specified number of seconds",
+           description = "This command makes the calling thread (in dCache system) sleep until" +
+                   "specified seconds have elapsed or a signal arrives which is not ignored. " +
+                   "When the sleep time elapsed, \'ready\' message is displayed and the thread " +
+                   "is ready to be use again")
+   public class SleepCommand implements Callable<String>
+   {
+       @Argument(metaVar = "secondsToSleep",
+               usage = "You must specify the duration (in seconds) the thread should to asleep.\n")
+       String sleepTime;
+
+
+       @Override
+       public String call() throws Exception{
+           int s = Integer.valueOf(sleepTime);
+           Thread.sleep( s*1000) ;
+           return "Ready\n" ;
+       }
+   }
+   /*public static final String hh_sleep = "<secondsToSleep>" ;
    public String ac_sleep_$_1( Args args ) throws InterruptedException {
       int s = Integer.valueOf(args.argv(0));
       Thread.sleep( s*1000) ;
       return "Ready\n" ;
 
-   }
+   }*/
 
     @Command(name = "ping", hint = "send a ping",
             description = "Ping command is used to test a connection between admin and a cell.\n" +
@@ -1149,6 +1168,8 @@ public class CellShell extends CommandInterpreter
    public String ac_id( Args args ){
       return _nucleus.getCellDomainName()+"\n" ;
    }
+
+    //@Command()
 
    public static final String fh_check =
       " check [-strong] <var1> [<var2> [] ... ]\n"+
