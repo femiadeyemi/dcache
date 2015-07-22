@@ -775,7 +775,7 @@ public class CellShell extends CommandInterpreter
 
     @Command(name = "ping", hint = "send a ping",
             description = "Ping command is used to test a connection between admin and a cell.\n" +
-                    "The ping send a message (or packet) to a target cell and wait for a response.\n" +
+                    "The ping send a message (or packet) to a target cell and wait for a response." +
                     "This can be use to verify if a cell is up and running.\n")
     public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
