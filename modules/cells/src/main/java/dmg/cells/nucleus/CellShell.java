@@ -787,14 +787,14 @@ public class CellShell extends CommandInterpreter
         int size;
 
         @Argument(index = 2, metaVar = "numOfPackets", required = false,
-                usage = "[Optional] Specify the number of times the packets should be send\n")
+                usage = "[Optional] Specify the number of times the packets should be send.\n")
         int packets = 1;
 
         @Option(name = "timeout", metaVar = "millis",
                 usage = "When a timeout value is provided when executing the ping command,\n" +
-                        "this adjusts the amount of time, in milliseconds, that ping waits\n" +
-                        "for a reply. If this option is not specified, the default -timeout\n" +
-                        "value is used.")
+                        "this adjusts the amount of time (in milliseconds) that ping waits\n" +
+                        "for a reply. If this option is not specified, the default" +
+                        "value is used.\n")
         int timeout = 1000;
 
         private int count;
