@@ -767,30 +767,24 @@ public class CellShell extends CommandInterpreter
    //
    @Command(name = "sleep", hint = "sleep for the specified number of seconds",
            description = "This command makes the calling thread (in dCache system) sleep until" +
-                   "specified seconds have elapsed or a signal arrives which is not ignored. " +
-                   "When the sleep time elapsed, \'ready\' message is displayed and the thread " +
-                   "is ready to be use again")
+                   "specified seconds have elapsed or a signal arrives which is not ignored." +
+                   "When the sleep time elapsed, \'Ready\' message is printed on the " +
+                   "screen and the thread is ready to be use again")
    public class SleepCommand implements Callable<String>
    {
-       @Argument(metaVar = "secondsToSleep",
+       @Argument(metaVar = "sleepTime", valueSpec = "seconds",
                usage = "You must specify the duration (in seconds) the thread should to asleep.\n")
        String sleepTime;
 
 
        @Override
-       public String call() throws Exception{
+       public String call() throws Exception
+       {
            int s = Integer.valueOf(sleepTime);
            Thread.sleep( s*1000) ;
            return "Ready\n" ;
        }
    }
-   /*public static final String hh_sleep = "<secondsToSleep>" ;
-   public String ac_sleep_$_1( Args args ) throws InterruptedException {
-      int s = Integer.valueOf(args.argv(0));
-      Thread.sleep( s*1000) ;
-      return "Ready\n" ;
-
-   }*/
 
     @Command(name = "ping", hint = "send a ping",
             description = "Ping command is used to test a connection between admin and a cell.\n" +
@@ -1169,9 +1163,47 @@ public class CellShell extends CommandInterpreter
       return _nucleus.getCellDomainName()+"\n" ;
    }
 
-    //@Command()
+    @Command(name = "check", hint = "",
+            description = "        checks if all of the specified variables are set.\n"+
+                    "        Returns an error it not.\n"+
+                    "        The -strong option requires that all variables must not be\n"+
+                    "        the zero string and must not only contain blanks\n")
+    public class CheckCommand implements Callable<String>
+    {
+        @Argument(valueSpec = "")
+        String [] name;
 
-   public static final String fh_check =
+        @Option(name = "strong")
+        boolean strong;
+
+
+        @Override
+        public String call() throws Exception
+        {
+            String varName;
+            Object value;
+            for( int i= 0 ;i < name.length ; i++ ){
+                varName = name[i] ;
+                if( ( value = _environment.get( varName ) ) == null ) {
+                    value = _nucleus.getDomainContext().get(varName);
+                }
+                if( value == null ) {
+                    throw new
+                            CommandException(1, "variable is not defined : " + varName);
+                }
+
+                if( strong ){
+                    String strValue = value.toString() ;
+                    if( strValue.trim().equals("") ) {
+                        throw new
+                                CommandException(2, "variable is defined but empty : " + varName);
+                    }
+                }
+            }
+            return "" ;
+        }
+    }
+   /*public static final String fh_check =
       " check [-strong] <var1> [<var2> [] ... ]\n"+
       "        checks if all of the specified variables are set.\n"+
       "        Returns an error it not.\n"+
@@ -1205,7 +1237,7 @@ public class CellShell extends CommandInterpreter
       }
       return "" ;
 
-   }
+   }*/
    public static final String fh_import_context =
      "  import  context|env  [options] <variableName>\n" +
      "           options :\n"+
