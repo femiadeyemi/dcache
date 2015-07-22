@@ -773,25 +773,28 @@ public class CellShell extends CommandInterpreter
 
    }
 
-    @Command(name = "ping", hint = "send a message to a target and wait for a response",
-            description = "")
+    @Command(name = "ping", hint = "send a ping",
+            description = "Ping command is used to test a connection between admin and a cell.\n" +
+                    "The ping send a message (or packet) to a target cell and wait for a response.\n" +
+                    "This can be use to verify if a cell is up and running.\n")
     public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
-        @Argument(index = 0, metaVar = "destinationCell")
+        @Argument(index = 0, metaVar = "destinationCell", usage = "name of the cell to be pinged")
         CellPath destination;
 
-        @Argument(index = 1, metaVar = "packetSize", required = false)
+        @Argument(index = 1, metaVar = "packetSize", required = false,
+                usage = "[Optional] Specify the number of data bytes to be sent.\n")
         int size;
 
-        @Argument(index = 2, metaVar = "numOfPackets", required = false)
+        @Argument(index = 2, metaVar = "numOfPackets", required = false,
+                usage = "[Optional] Specify the number of times the packets should be send\n")
         int packets = 1;
 
         @Option(name = "timeout", metaVar = "millis",
-                usage = "Specify a timeout value when executing the ping command.\n" +
-                        "This option adjusts the amount of time, in milliseconds, \n" +
-                        "that ping waits for a reply.\n\n" +
-                        "If you don't use the -timeout option, the default\n" +
-                        "timeout value is used.")
+                usage = "When a timeout value is provided when executing the ping command,\n" +
+                        "this adjusts the amount of time, in milliseconds, that ping waits\n" +
+                        "for a reply. If this option is not specified, the default -timeout\n" +
+                        "value is used.")
         int timeout = 1000;
 
         private int count;
