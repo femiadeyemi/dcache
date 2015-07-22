@@ -346,7 +346,33 @@ public class CellShell extends CommandInterpreter
    //
    //  version
    //
-   public static final String hh_version = "[<package>] ; package info of dmg/cells/nucleus" ;
+   @Command(name = "version", hint = "package info of dmg/cells/nucleus",
+           description = "Version command provide information about a package ")
+   public class VersionCommand implements Callable<Object>
+   {
+       @Argument(metaVar = "package", required = false, usage = "[Optional] Specify the package name")
+       String packageName;
+
+
+       @Override
+       public Object call() throws Exception
+       {
+           Package p = Package.getPackage( packageName.isEmpty() ? "dmg.cells.nucleus" : packageName );
+           StringBuilder sb = new StringBuilder();
+           if( p != null ){
+               String tmp = p.getSpecificationTitle() ;
+               sb.append("SpecificationTitle:   ").append(tmp==null?"(Unknown)":tmp).append("\n");
+               tmp = p.getSpecificationVendor() ;
+               sb.append("SpecificationVendor:  ").append(tmp==null?"(Unknown)":tmp).append("\n");
+               tmp = p.getSpecificationVersion() ;
+               sb.append("SpecificationVersion: ").append(tmp==null?"(Unknown)":tmp).append("\n");
+           }else{
+               sb.append("No version version found");
+           }
+           return sb.toString() ;
+       }
+   }
+   /*public static final String hh_version = "[<package>] ; package info of dmg/cells/nucleus" ;
    public Object ac_version_$_0_1( Args args ){
       Package p = Package.getPackage( args.argc() == 0 ? "dmg.cells.nucleus" : args.argv(0) );
       StringBuilder sb = new StringBuilder();
@@ -362,7 +388,7 @@ public class CellShell extends CommandInterpreter
       }
       return sb.toString() ;
 
-   }
+   }*/
    ////////////////////////////////////////////////////////////
    //
    //   getroutes, getcelltunnelinfos, getcellinfos
@@ -1163,7 +1189,7 @@ public class CellShell extends CommandInterpreter
       return _nucleus.getCellDomainName()+"\n" ;
    }
 
-    @Command(name = "check", hint = "",
+    /*@Command(name = "check", hint = "",
             description = "        checks if all of the specified variables are set.\n"+
                     "        Returns an error it not.\n"+
                     "        The -strong option requires that all variables must not be\n"+
@@ -1202,8 +1228,8 @@ public class CellShell extends CommandInterpreter
             }
             return "" ;
         }
-    }
-   /*public static final String fh_check =
+    }*/
+   public static final String fh_check =
       " check [-strong] <var1> [<var2> [] ... ]\n"+
       "        checks if all of the specified variables are set.\n"+
       "        Returns an error it not.\n"+
@@ -1237,7 +1263,7 @@ public class CellShell extends CommandInterpreter
       }
       return "" ;
 
-   }*/
+   }
    public static final String fh_import_context =
      "  import  context|env  [options] <variableName>\n" +
      "           options :\n"+
