@@ -788,8 +788,8 @@ public class CellShell extends CommandInterpreter
 
         @Option(name = "timeout", metaVar = "millis",
                 usage = "Specify a timeout value when executing the ping command.\n" +
-                        "This adjusts the amount of time, in milliseconds,\n" +
-                        "that ping waits for each reply.\n\n" +
+                        "This option adjusts the amount of time, in milliseconds, \n" +
+                        "that ping waits for a reply.\n\n" +
                         "If you don't use the -timeout option, the default\n" +
                         "timeout value is used.")
         int timeout = 1000;
