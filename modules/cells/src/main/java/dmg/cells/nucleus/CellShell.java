@@ -352,7 +352,7 @@ public class CellShell extends CommandInterpreter
    {
        @Argument(metaVar = "packageName", required = false,
                usage = "Specify the package name. The package name\n" +
-                       "is an optional argument and if not given,\n " +
+                       "is an optional argument and if not given,\n" +
                        "the version information will be about the\n" +
                        "default package. The default package name is:\n" +
                        "dmg/cells/nucleus\n")
@@ -1183,7 +1183,7 @@ public class CellShell extends CommandInterpreter
                     "Returns an error if it is not.\n\n")
     public class CheckCommand implements Callable<String>
     {
-        @Argument(metaVar = "var1> | <val1> <var2",
+        @Argument(metaVar = "var1> | <val1> <var2> <...",
                 usage = "Specify the variable you want to check.\n" +
                         "The argument can be a single variable or\n" +
                         "list of variables which must be separated\n" +
