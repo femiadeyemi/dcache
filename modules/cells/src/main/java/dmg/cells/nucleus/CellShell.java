@@ -382,22 +382,88 @@ public class CellShell extends CommandInterpreter
    //
    //   getroutes, getcelltunnelinfos, getcellinfos
    //
-   public Object ac_getroutes( Args args ){
-       return _nucleus.getRoutingList() ;
+   @Command(name = "getroutes", hint = "list all routes",
+           description = "getroutes command display all routes and routines available\n" +
+                   "within a domain\n\n")
+   public class GetroutesCommand implements Callable<Object>
+   {
+       @Override
+       public Object call() throws Exception
+       {
+           return _nucleus.getRoutingList() ;
+       }
    }
-   public CellTunnelInfo[] ac_getcelltunnelinfos( Args args ){
+   /*public Object ac_getroutes( Args args ){
+       return _nucleus.getRoutingList() ;
+   }*/
+
+    @Command(name = "getcelltunnelinfos", hint = "list tunnel cell(s) information")
+    public class GetcelltunnelinfosCommand implements Callable<CellTunnelInfo[]>
+    {
+        @Override
+        public CellTunnelInfo[] call() throws Exception
+        {
+            List<CellTunnelInfo> cellTunnelInfos = _nucleus.getCellTunnelInfos();
+            return cellTunnelInfos.toArray(new CellTunnelInfo[cellTunnelInfos.size()]);
+        }
+    }
+   /*public CellTunnelInfo[] ac_getcelltunnelinfos( Args args ){
        List<CellTunnelInfo> cellTunnelInfos = _nucleus.getCellTunnelInfos();
        return cellTunnelInfos.toArray(new CellTunnelInfo[cellTunnelInfos.size()]);
-   }
-   public Object ac_getcellinfo_$_1( Args args ) throws CommandException {
+   }*/
+
+    @Command(name = "getcellinfo", hint = "display cell information",
+            description = "The getcellinfo command .\n" +
+                    "NOTE: This command can only be executed from the System cell\n" +
+                    "of a domain\n\n")
+    public class GetcellinfoCommand implements Callable<Object>
+    {
+        @Argument(metaVar = "cellName")
+        String cellName;
+
+        @Override
+        public Object call() throws Exception
+        {
+            CellInfo info = _nucleus.getCellInfo(cellName);
+            if(info == null ) {
+                throw new CommandException(68, "not found : " + cellName);
+            }
+
+            return info;
+        }
+    }
+   /*public Object ac_getcellinfo_$_1( Args args ) throws CommandException {
       CellInfo info = _nucleus.getCellInfo( args.argv(0) ) ;
       if( info == null ) {
           throw new CommandException(68, "not found : " + args.argv(0));
       }
 
       return info ;
-   }
-   public Object ac_getcellinfos( Args args ){
+   }*/
+
+    @Command(name = "getcellinfos", hint = "get information on all cell within a domain",
+            description = "NOTE: This command can only be executed from the System cell\n" +
+                    "of a domain and no argument is required\n\n")
+    public class GetcellinfosCommand implements Callable<Object>
+    {
+        @Override
+        public Object call() throws Exception
+        {
+            List<String> names = _nucleus.getCellNames();
+
+            List<CellInfo> infoList = new ArrayList<>(names.size());
+
+            for(String name : names) {
+                CellInfo info = _nucleus.getCellInfo(name);
+                if(info != null) {
+                    infoList.add(info);
+                }
+            }
+
+            return infoList.toArray(new CellInfo[infoList.size()]);
+        }
+    }
+   /*public Object ac_getcellinfos( Args args ){
        List<String> names = _nucleus.getCellNames();
 
        List<CellInfo> infoList = new ArrayList<>(names.size());
@@ -410,8 +476,31 @@ public class CellShell extends CommandInterpreter
        }
 
        return infoList.toArray(new CellInfo[infoList.size()]);
+   }*/
+
+   @Command(name = "getcontext", hint = "",
+           description = "")
+   public class GetcontextCommand implements Callable<Object>
+   {
+       @Argument(metaVar = "", required = false)
+       String str;
+
+
+       @Override
+       public Object call() throws Exception
+       {
+           if( str.isEmpty() ){
+               return _nucleus.getDomainContext().keySet().toArray();
+           }else{
+               Object o = _nucleus.getDomainContext( str ) ;
+               if( o == null ) {
+                   throw new CommandException("Context not found : " + str);
+               }
+               return o ;
+           }
+       }
    }
-   public Object ac_getcontext_$_0_1( Args args ) throws CommandException {
+   /*public Object ac_getcontext_$_0_1( Args args ) throws CommandException {
       if( args.argc() == 0 ){
           return _nucleus.getDomainContext().keySet().toArray();
       }else{
@@ -421,7 +510,7 @@ public class CellShell extends CommandInterpreter
         }
         return o ;
       }
-   }
+   }*/
    ////////////////////////////////////////////////////////////
    //
    //   waitfor cell/domain/context
