@@ -355,7 +355,7 @@ public class CellShell extends CommandInterpreter
                        "is an optional argument and if not given,\n" +
                        "the version information will be about the\n" +
                        "default package. The default package name is:\n" +
-                       "\bdmg/cells/nucleus\n")
+                       "dmg/cells/nucleus\n")
        String packageName;
 
 
