@@ -347,14 +347,15 @@ public class CellShell extends CommandInterpreter
    //  version
    //
    @Command(name = "version", hint = "get package information",
-           description = "Version command provide information about a package ")
+           description = "Version command provide information about a package\n\n")
    public class VersionCommand implements Callable<Serializable>
    {
-       @Argument(metaVar = "package", required = false,
-               usage = "Specify the package name. The package name is an optional\n " +
-                       "argument and if not given, the version information will be " +
-                       "about the default package.\n" +
-                       "The default package name is: dmg/cells/nucleus\n")
+       @Argument(metaVar = "packageName", required = false,
+               usage = "Specify the package name. The package name\n" +
+                       "is an optional argument and if not given,\n " +
+                       "the version information will be about the\n" +
+                       "default package. The default package name is:\n" +
+                       "dmg/cells/nucleus\n")
        String packageName;
 
 
@@ -1177,20 +1178,23 @@ public class CellShell extends CommandInterpreter
       return _nucleus.getCellDomainName()+"\n" ;
    }
 
-    @Command(name = "check", hint = "check  variable(s) status",
+    @Command(name = "check", hint = "check variable(s) status",
             description = "checks if all of the specified variables are set.\n"+
-                    "Returns an error if it is not.\n")
+                    "Returns an error if it is not.\n\n")
     public class CheckCommand implements Callable<String>
     {
-        @Argument(metaVar = "var1> | <val1",
-                usage = "Specify the variable you want to check. " +
-                        "The argument can be a single variable or list of variables which must be separated with a blank space. " +
-                        "At least one variable must be listed.\n")
-        String [] name;//<var1> [<var2> [] ... ]
+        @Argument(metaVar = "var1> | <val1> <var2",
+                usage = "Specify the variable you want to check.\n" +
+                        "The argument can be a single variable or\n" +
+                        "list of variables which must be separated\n" +
+                        "with a blank space. At least one variable\n" +
+                        "must be provided.\n")
+        String [] name;
 
         @Option(name = "strong", metaVar = "-strong",
-                usage = "The -strong option requires that all variables must not " +
-                        "be the zero string and must not only contain blanks")
+                usage = "The -strong option requires that all variables\n" +
+                        "must not be the zero string and must not only \n" +
+                        "contain blanks\n")
         boolean strong;
 
 
