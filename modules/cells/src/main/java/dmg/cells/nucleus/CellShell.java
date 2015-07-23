@@ -375,7 +375,7 @@ public class CellShell extends CommandInterpreter
            return sb.toString() ;
        }
    }
-    
+
    ////////////////////////////////////////////////////////////
    //
    //   getroutes, getcelltunnelinfos, getcellinfos
@@ -1216,41 +1216,7 @@ public class CellShell extends CommandInterpreter
             return "" ;
         }
     }
-  /* public static final String fh_check =
-      " check [-strong] <var1> [<var2> [] ... ]\n"+
-      "        checks if all of the specified variables are set.\n"+
-      "        Returns an error it not.\n"+
-      "        The -strong option requires that all variables must not be\n"+
-      "        the zero string and must not only contain blanks\n" ;
 
-   public static final String hh_check = "[-strong] <var1> [<var2> [] ... ]" ;
-   public String ac_check_$_1_99( Args args )throws CommandException {
-
-      boolean strong = args.hasOption("strong") ;
-
-      String varName;
-      Object value;
-      for( int i= 0 ;i < args.argc() ; i++ ){
-         varName = args.argv(i) ;
-         if( ( value = _environment.get( varName ) ) == null ) {
-             value = _nucleus.getDomainContext().get(varName);
-         }
-         if( value == null ) {
-             throw new
-                     CommandException(1, "variable is not defined : " + varName);
-         }
-
-         if( strong ){
-             String strValue = value.toString() ;
-             if( strValue.trim().equals("") ) {
-                 throw new
-                         CommandException(2, "variable is defined but empty : " + varName);
-             }
-         }
-      }
-      return "" ;
-
-   }*/
    public static final String fh_import_context =
      "  import  context|env  [options] <variableName>\n" +
      "           options :\n"+
