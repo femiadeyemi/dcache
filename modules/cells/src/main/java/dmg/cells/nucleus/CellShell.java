@@ -861,12 +861,12 @@ public class CellShell extends CommandInterpreter
                     "This can be use to verify if a cell is up and running.")
     public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
-        @Argument(index = 0, metaVar = "destinationCell", usage = "name of the cell to be pinged")
-        CellPath destination;
+        @Argument(index = 0, usage = "name of the cell to be pinged")
+        CellPath destinationCell;
 
-        @Argument(index = 1, metaVar = "packetSize", required = false,
+        @Argument(index = 1, required = false,
                 usage = "Specify the number of data bytes to be sent.")
-        int size;
+        int packetSize;
 
         @Argument(index = 2, metaVar = "numOfPackets", required = false,
                 usage = "Specify the number of times the packets should be send.")
@@ -895,7 +895,7 @@ public class CellShell extends CommandInterpreter
         {
             if (count < packets) {
                 count++;
-                _nucleus.sendMessage(new CellMessage(destination, new PingMessage(size)), true, true,
+                _nucleus.sendMessage(new CellMessage(destinationCell, new PingMessage(packetSize)), true, true,
                                      new CellMessageAnswerable()
                                      {
                                          @Override
