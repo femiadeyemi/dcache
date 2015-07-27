@@ -25,16 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.SortedSet;
-import java.util.Stack;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -354,15 +345,15 @@ public class CellShell extends CommandInterpreter
                usage = "Specify the package name. The package name\n" +
                        "is an optional argument and if not given,\n" +
                        "the version information will be about the\n" +
-                       "default package. The default package name is:\n" +
-                       "dmg/cells/nucleus\n")
+                       "default package. The default package name\n" +
+                       "is: dmg.cells.nucleus\n")
        String packageName;
 
 
        @Override
        public Serializable call() throws Exception
        {
-           Package p = Package.getPackage( packageName.isEmpty() ? "dmg.cells.nucleus" : packageName );
+           Package p = Package.getPackage( packageName == null ? "dmg.cells.nucleus" : packageName );
            StringBuilder sb = new StringBuilder();
            if( p != null ){
                String tmp = p.getSpecificationTitle() ;
@@ -383,21 +374,29 @@ public class CellShell extends CommandInterpreter
    //   getroutes, getcelltunnelinfos, getcellinfos
    //
    @Command(name = "getroutes", hint = "list all routes",
-           description = "getroutes command display all routes and routines available\n" +
-                   "within a domain\n\n")
-   public class GetroutesCommand implements Callable<Object>
+           description = "The getroutes command display all routes and routines\n" +
+                   "available within a domain\n\n"+
+                   "===========================================\n" +
+                   "NOTE:\n" +
+                   "\tThis command CAN ONLY be executed from\n" +
+                   "\twithin the System cell of a domain\n"+
+                   "===========================================\n\n")
+   public class GetroutesCommand implements Callable<CellRoute[]>
    {
        @Override
-       public Object call() throws Exception
+       public CellRoute[] call() throws Exception
        {
            return _nucleus.getRoutingList() ;
        }
    }
-   /*public Object ac_getroutes( Args args ){
-       return _nucleus.getRoutingList() ;
-   }*/
 
-    @Command(name = "getcelltunnelinfos", hint = "list tunnel cell(s) information")
+    @Command(name = "getcelltunnelinfos",
+            description = "list all tunnel cells information\n\n"+
+                    "===========================================\n" +
+                    "NOTE:\n" +
+                    "\tThis command CAN ONLY be executed from\n" +
+                    "\twithin the System cell of a domain\n"+
+                    "===========================================\n\n")
     public class GetcelltunnelinfosCommand implements Callable<CellTunnelInfo[]>
     {
         @Override
@@ -407,22 +406,22 @@ public class CellShell extends CommandInterpreter
             return cellTunnelInfos.toArray(new CellTunnelInfo[cellTunnelInfos.size()]);
         }
     }
-   /*public CellTunnelInfo[] ac_getcelltunnelinfos( Args args ){
-       List<CellTunnelInfo> cellTunnelInfos = _nucleus.getCellTunnelInfos();
-       return cellTunnelInfos.toArray(new CellTunnelInfo[cellTunnelInfos.size()]);
-   }*/
 
     @Command(name = "getcellinfo", hint = "display cell information",
-            description = "The getcellinfo command .\n" +
-                    "NOTE: This command can only be executed from the System cell\n" +
-                    "of a domain\n\n")
-    public class GetcellinfoCommand implements Callable<Object>
+            description = "The getcellinfo command gives a brief information on\n" +
+                    "a particular cell of interest.\n\n" +
+                    "===========================================\n" +
+                    "NOTE:\n" +
+                    "\tThis command CAN ONLY be executed from\n" +
+                    "\twithin the System cell of a domain\n"+
+                    "===========================================\n\n")
+    public class GetcellinfoCommand implements Callable<CellInfo>
     {
-        @Argument(metaVar = "cellName")
+        @Argument(metaVar = "cellName", usage = "[Required] Specify the cell name")
         String cellName;
 
         @Override
-        public Object call() throws Exception
+        public CellInfo call() throws Exception
         {
             CellInfo info = _nucleus.getCellInfo(cellName);
             if(info == null ) {
@@ -432,22 +431,19 @@ public class CellShell extends CommandInterpreter
             return info;
         }
     }
-   /*public Object ac_getcellinfo_$_1( Args args ) throws CommandException {
-      CellInfo info = _nucleus.getCellInfo( args.argv(0) ) ;
-      if( info == null ) {
-          throw new CommandException(68, "not found : " + args.argv(0));
-      }
 
-      return info ;
-   }*/
-
-    @Command(name = "getcellinfos", hint = "get information on all cell within a domain",
-            description = "NOTE: This command can only be executed from the System cell\n" +
-                    "of a domain and no argument is required\n\n")
-    public class GetcellinfosCommand implements Callable<Object>
+    @Command(name = "getcellinfos", hint = "get information on all cells within a domain\n",
+            description = "The getcellinfos command is for obtaining a summarised\n" +
+                    "information on all cells within a domain.\n\n" +
+                    "===========================================\n" +
+                    "Please note that the getcellinfos command\n" +
+                    "CAN ONLY be executed from within the\n" +
+                    "System cell in a domain.\n" +
+                    "===========================================\n\n")
+    public class GetcellinfosCommand implements Callable<CellInfo[]>
     {
         @Override
-        public Object call() throws Exception
+        public CellInfo[] call() throws Exception
         {
             List<String> names = _nucleus.getCellNames();
 
@@ -463,54 +459,40 @@ public class CellShell extends CommandInterpreter
             return infoList.toArray(new CellInfo[infoList.size()]);
         }
     }
-   /*public Object ac_getcellinfos( Args args ){
-       List<String> names = _nucleus.getCellNames();
 
-       List<CellInfo> infoList = new ArrayList<>(names.size());
-
-       for(String name : names) {
-           CellInfo info = _nucleus.getCellInfo(name);
-           if(info != null) {
-               infoList.add(info);
-           }
-       }
-
-       return infoList.toArray(new CellInfo[infoList.size()]);
-   }*/
-
-   @Command(name = "getcontext", hint = "",
-           description = "")
-   public class GetcontextCommand implements Callable<Object>
+   @Command(name = "getcontext", hint = "view a context or list all contexts",
+           description = "The getcontext command can be use to list all\n" +
+                   "the contexts in a domain or to view the content\n" +
+                   "of a particular context.\n\n" +
+                   "===========================================\n" +
+                   "Note that, this command CAN ONLY be\n" +
+                   "executed within the System cell of\n" +
+                   "a domain\n"+
+                   "===========================================\n\n")
+   public class GetcontextCommand implements Callable<Serializable>
    {
-       @Argument(metaVar = "", required = false)
-       String str;
-
+       @Argument(metaVar = "contextName", required = false,
+               usage = "[Optional] Specify the name of a particular context\n" +
+               "to view. This optional argument is case sensitive\n" +
+                       "and if a no context name is provided, a\n" +
+                       "list of all the contexts will be displayed.\n")
+       String contextName;
 
        @Override
-       public Object call() throws Exception
+       public Serializable call() throws Exception
        {
-           if( str.isEmpty() ){
+           if (contextName == null) {
                return _nucleus.getDomainContext().keySet().toArray();
            }else{
-               Object o = _nucleus.getDomainContext( str ) ;
+               Object o = _nucleus.getDomainContext( contextName ) ;
                if( o == null ) {
-                   throw new CommandException("Context not found : " + str);
+                   throw new CommandException("Context not found : " + contextName);
                }
-               return o ;
+               return (Serializable) o;
            }
        }
    }
-   /*public Object ac_getcontext_$_0_1( Args args ) throws CommandException {
-      if( args.argc() == 0 ){
-          return _nucleus.getDomainContext().keySet().toArray();
-      }else{
-        Object o = _nucleus.getDomainContext( args.argv(0) ) ;
-        if( o == null ) {
-            throw new CommandException("Context not found : " + args.argv(0));
-        }
-        return o ;
-      }
-   }*/
+
    ////////////////////////////////////////////////////////////
    //
    //   waitfor cell/domain/context
