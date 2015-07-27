@@ -337,16 +337,20 @@ public class CellShell extends CommandInterpreter
    //
    //  version
    //
-   @Command(name = "version", hint = "get package information",
-           description = "Version command provide information about a package\n\n")
+/*   @Command(name = "version", hint = "get information about a package",
+           description = "Version command provide information about a package " +
+                   "specification like title, vendor and version")*/
+   @Command(name = "version", hint = "get information about a package",
+           description = "Information about the implementation-title, -vendor " +
+                   "and -version, as described within some jar.  The jar file " +
+                   "is the one that provides some specific Java package.  If " +
+                   "the jar file implementation-vendor is 'dCache.org' then the " +
+                   "implementation-version is the dCache version.")
    public class VersionCommand implements Callable<Serializable>
    {
-       @Argument(metaVar = "packageName", required = false,
-               usage = "Specify the package name. The package name\n" +
-                       "is an optional argument and if not given,\n" +
-                       "the version information will be about the\n" +
-                       "default package. The default package name\n" +
-                       "is: dmg.cells.nucleus\n")
+       @Argument(required = false,
+               usage = "The package used to select the jar file; 'dmg.cells.nucleus' " +
+                       "is used if not specified.")
        String packageName;
 
 
@@ -356,14 +360,14 @@ public class CellShell extends CommandInterpreter
            Package p = Package.getPackage( packageName == null ? "dmg.cells.nucleus" : packageName );
            StringBuilder sb = new StringBuilder();
            if( p != null ){
-               String tmp = p.getSpecificationTitle() ;
-               sb.append("SpecificationTitle:   ").append(tmp==null?"(Unknown)":tmp).append("\n");
-               tmp = p.getSpecificationVendor() ;
-               sb.append("SpecificationVendor:  ").append(tmp==null?"(Unknown)":tmp).append("\n");
-               tmp = p.getSpecificationVersion() ;
-               sb.append("SpecificationVersion: ").append(tmp==null?"(Unknown)":tmp).append("\n");
+               String tmp = p.getImplementationTitle();
+               sb.append("ImplementationTitle:   ").append(tmp==null?"(Unknown)":tmp).append("\n");
+               tmp = p.getImplementationVendor();
+               sb.append("ImplementationVendor:  ").append(tmp==null?"(Unknown)":tmp).append("\n");
+               tmp = p.getImplementationVersion();
+               sb.append("ImplementationVersion: ").append(tmp==null?"(Unknown)":tmp).append("\n");
            }else{
-               sb.append("No version version found");
+               sb.append("No information found");
            }
            return sb.toString() ;
        }
@@ -374,13 +378,9 @@ public class CellShell extends CommandInterpreter
    //   getroutes, getcelltunnelinfos, getcellinfos
    //
    @Command(name = "getroutes", hint = "list all routes",
-           description = "The getroutes command display all routes and routines\n" +
-                   "available within a domain\n\n"+
-                   "===========================================\n" +
-                   "NOTE:\n" +
-                   "\tThis command CAN ONLY be executed from\n" +
-                   "\twithin the System cell of a domain\n"+
-                   "===========================================\n\n")
+           description = "Display all message routes " +
+                   "available within a domain. This includes the cell name, " +
+                   "domain name, cell address and route type")
    public class GetroutesCommand implements Callable<CellRoute[]>
    {
        @Override
@@ -391,12 +391,7 @@ public class CellShell extends CommandInterpreter
    }
 
     @Command(name = "getcelltunnelinfos",
-            description = "list all tunnel cells information\n\n"+
-                    "===========================================\n" +
-                    "NOTE:\n" +
-                    "\tThis command CAN ONLY be executed from\n" +
-                    "\twithin the System cell of a domain\n"+
-                    "===========================================\n\n")
+            description = "list all tunnel cells information.")
     public class GetcelltunnelinfosCommand implements Callable<CellTunnelInfo[]>
     {
         @Override
@@ -408,16 +403,12 @@ public class CellShell extends CommandInterpreter
     }
 
     @Command(name = "getcellinfo", hint = "display cell information",
-            description = "The getcellinfo command gives a brief information on\n" +
-                    "a particular cell of interest.\n\n" +
-                    "===========================================\n" +
-                    "NOTE:\n" +
-                    "\tThis command CAN ONLY be executed from\n" +
-                    "\twithin the System cell of a domain\n"+
-                    "===========================================\n\n")
+            description = "The getcellinfo command gives a brief information on " +
+                    "a particular cell of interest. The information consist of the cell name, " +
+                    "cell state, event queue size, thread count, cell class and lastly short Info")
     public class GetcellinfoCommand implements Callable<CellInfo>
     {
-        @Argument(metaVar = "cellName", usage = "[Required] Specify the cell name")
+        @Argument(usage = "Specify the cell name")
         String cellName;
 
         @Override
@@ -432,14 +423,11 @@ public class CellShell extends CommandInterpreter
         }
     }
 
-    @Command(name = "getcellinfos", hint = "get information on all cells within a domain\n",
-            description = "The getcellinfos command is for obtaining a summarised\n" +
-                    "information on all cells within a domain.\n\n" +
-                    "===========================================\n" +
-                    "Please note that the getcellinfos command\n" +
-                    "CAN ONLY be executed from within the\n" +
-                    "System cell in a domain.\n" +
-                    "===========================================\n\n")
+    @Command(name = "getcellinfos", hint = "get information on all cells within a domain",
+            description = "The getcellinfos command is for obtaining a summarised " +
+                    "information on all cells (in a table format) within a domain. " +
+                    "From left to right, the information displayed consist of the cell name, " +
+                    "cell state, event queue size, thread count, cell class and lastly short Info")
     public class GetcellinfosCommand implements Callable<CellInfo[]>
     {
         @Override
@@ -461,21 +449,16 @@ public class CellShell extends CommandInterpreter
     }
 
    @Command(name = "getcontext", hint = "view a context or list all contexts",
-           description = "The getcontext command can be use to list all\n" +
-                   "the contexts in a domain or to view the content\n" +
-                   "of a particular context.\n\n" +
-                   "===========================================\n" +
-                   "Note that, this command CAN ONLY be\n" +
-                   "executed within the System cell of\n" +
-                   "a domain\n"+
-                   "===========================================\n\n")
+           description = "The getcontext command can be use to list all " +
+                   "the contexts in a domain or to view the content." +
+                   "of a particular context.")
    public class GetcontextCommand implements Callable<Serializable>
    {
-       @Argument(metaVar = "contextName", required = false,
-               usage = "[Optional] Specify the name of a particular context\n" +
-               "to view. This optional argument is case sensitive\n" +
-                       "and if a no context name is provided, a\n" +
-                       "list of all the contexts will be displayed.\n")
+       @Argument(required = false,
+               usage = "Specify the name of a particular context " +
+               "to view. This optional argument is case sensitive " +
+                       "and if no context name is provided, a " +
+                       "list of all the contexts will be displayed.")
        String contextName;
 
        @Override
@@ -859,7 +842,7 @@ public class CellShell extends CommandInterpreter
    public class SleepCommand implements Callable<String>
    {
        @Argument(metaVar = "sleepTime", valueSpec = "seconds",
-               usage = "You must specify the duration (in seconds) the thread should to asleep.\n")
+               usage = "You must specify the duration (in seconds) the thread should to asleep.")
        String sleepTime;
 
 
@@ -873,26 +856,26 @@ public class CellShell extends CommandInterpreter
    }
 
     @Command(name = "ping", hint = "send a ping",
-            description = "Ping command is used to test a connection between admin and a cell.\n" +
+            description = "Ping command is used to test a connection between admin and a cell. " +
                     "The ping send a message (or packet) to a target cell and wait for a response." +
-                    "This can be use to verify if a cell is up and running.\n")
+                    "This can be use to verify if a cell is up and running.")
     public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
         @Argument(index = 0, metaVar = "destinationCell", usage = "name of the cell to be pinged")
         CellPath destination;
 
         @Argument(index = 1, metaVar = "packetSize", required = false,
-                usage = "[Optional] Specify the number of data bytes to be sent.\n")
+                usage = "Specify the number of data bytes to be sent.")
         int size;
 
         @Argument(index = 2, metaVar = "numOfPackets", required = false,
-                usage = "[Optional] Specify the number of times the packets should be send.\n")
+                usage = "Specify the number of times the packets should be send.")
         int packets = 1;
 
         @Option(name = "timeout", metaVar = "millis",
-                usage = "When a timeout value is provided when executing the ping command,\n" +
-                        "this adjusts the amount of time (in milliseconds) that ping waits\n" +
-                        "for a reply. If this option is not specified, the default" +
+                usage = "When a timeout value is provided when executing the ping command, " +
+                        "this adjusts the amount of time (in milliseconds) that ping waits " +
+                        "for a reply. If this option is not specified, the default " +
                         "value is used.\n")
         int timeout = 1000;
 
@@ -1250,22 +1233,21 @@ public class CellShell extends CommandInterpreter
    }
 
     @Command(name = "check", hint = "check variable(s) status",
-            description = "checks if all of the specified variables are set.\n"+
-                    "Returns an error if it is not.\n\n")
+            description = "checks if all of the specified variables are set. "+
+                    "Returns an error if it is not.")
     public class CheckCommand implements Callable<String>
     {
-        @Argument(metaVar = "var1> | <val1> <var2> <...",
-                usage = "Specify the variable you want to check.\n" +
-                        "The argument can be a single variable or\n" +
-                        "list of variables which must be separated\n" +
-                        "with a blank space. At least one variable\n" +
-                        "must be provided.\n")
+        @Argument(usage = "Specify the variable you want to check. " +
+                        "The argument can be a single variable or " +
+                        "list of variables which must be separated " +
+                        "with a blank space. At least one variable " +
+                        "must be provided.")
         String [] name;
 
-        @Option(name = "strong", metaVar = "-strong",
-                usage = "The -strong option requires that all variables\n" +
-                        "must not be the zero string and must not only \n" +
-                        "contain blanks\n")
+        @Option(name = "strong", metaVar = "strong",
+                usage = "The strong option requires that all variables " +
+                        "must not be the zero string and must not only " +
+                        "contain blanks")
         boolean strong;
 
 
