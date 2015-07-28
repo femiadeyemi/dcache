@@ -834,15 +834,17 @@ public class CellShell extends CommandInterpreter
    //
    //   sleep
    //
-   @Command(name = "sleep", hint = "sleep for the specified number of seconds",
-           description = "This command makes the calling thread (in dCache system) sleep until" +
-                   "specified seconds have elapsed or a signal arrives which is not ignored." +
-                   "When the sleep time elapsed, \'Ready\' message is printed on the " +
-                   "screen and the thread is ready to be use again")
+   @Command(name = "sleep", hint = "wait for a period of time",
+           description = "Pause or put asleep a cell for a duration of time " +
+                   "specified in the argument. During this time, the cell can " +
+                   "neither send or receive a message until the specified sleep " +
+                   "time have elapsed. The sleep time can be interrupted when " +
+                   "dCache is stopped/shutdown. When the sleep time " +
+                   "elapsed, \'Ready\' message is printed on the " +
+                   "screen and the cell is ready to be use again.")
    public class SleepCommand implements Callable<String>
    {
-       @Argument(metaVar = "sleepTime", valueSpec = "seconds",
-               usage = "You must specify the duration (in seconds) the thread should to asleep.")
+       @Argument(usage = "The amount of time (in seconds) to be asleep.")
        String sleepTime;
 
 
@@ -855,28 +857,46 @@ public class CellShell extends CommandInterpreter
        }
    }
 
-    @Command(name = "ping", hint = "send a ping",
-            description = "Ping command is used to test a connection between admin and a cell. " +
-                    "The ping send a message (or packet) to a target cell and wait for a response." +
-                    "This can be use to verify if a cell is up and running.")
+    @Command(name = "ping", hint = "send a message and wait for the reply",
+            description = "A ping message is send to the destination cell. " +
+                    "The message is processed and a reply is send back " +
+                    "to the sender within the duration specified in timeout. " +
+                    "Although by default, the a cell is pinged once, but this can " +
+                    "be repeated for a number of times, that is, sending the message " +
+                    "back and forth, by specifying the iteration number. If message is not " +
+                    "send back to the sender, The execution of " +
+                    "this command is terminated if the whole process exceed the timeout. " +
+                    "" +
+                    "" +
+                    "If message is processed and " +
+                    "When this message is processed the destination cell will reply " +
+                    "immediately provided the timeout time. " +
+                    "The command waits either for the replied " +
+                    "message (which depends on the iteration number) or " +
+                    "the specified timeout duration.\n\n" +
+                    "Ping command can be used to: test a connection to a cell; " +
+                    "check the latency of the message system; also " +
+                    "to verify if a cell is up and running.")
     public class PingCommand extends DelayedReply implements Callable<PingCommand>
     {
-        @Argument(index = 0, usage = "name of the cell to be pinged")
+        @Argument(index = 0,
+                usage = "Name of the cell to be pinged.")
         CellPath destinationCell;
 
         @Argument(index = 1, required = false,
-                usage = "Specify the number of data bytes to be sent.")
-        int packetSize;
+                usage = "The amount of data message (in bytes) to be sent. If this argument " +
+                        "is not specified, the default value is used.\n")
+        int messageSize;
 
-        @Argument(index = 2, metaVar = "numOfPackets", required = false,
-                usage = "Specify the number of times the packets should be send.")
-        int packets = 1;
+        @Argument(index = 2, required = false,
+                usage = "The number of times the cell should be pinged. If this " +
+                        "argument is not specified, the default value is used.\n")
+        int iterationNumber = 1;
 
-        @Option(name = "timeout", metaVar = "millis",
-                usage = "When a timeout value is provided when executing the ping command, " +
-                        "this adjusts the amount of time (in milliseconds) that ping waits " +
-                        "for a reply. If this option is not specified, the default " +
-                        "value is used.\n")
+        @Option(name = "timeout",
+                usage = "The duration of time (in milliseconds) that ping waits " +
+                        "for a reply. If this option is not specified, " +
+                        "the default value is used.\n")
         int timeout = 1000;
 
         private int count;
@@ -893,9 +913,9 @@ public class CellShell extends CommandInterpreter
 
         private void ping()
         {
-            if (count < packets) {
+            if (count < iterationNumber) {
                 count++;
-                _nucleus.sendMessage(new CellMessage(destinationCell, new PingMessage(packetSize)), true, true,
+                _nucleus.sendMessage(new CellMessage(destinationCell, new PingMessage(messageSize)), true, true,
                                      new CellMessageAnswerable()
                                      {
                                          @Override
@@ -917,7 +937,7 @@ public class CellShell extends CommandInterpreter
                                          }
                                      }, MoreExecutors.directExecutor(), timeout);
             } else {
-                reply(packets + " pings  in " + sw);
+                reply(iterationNumber + " pings  in " + sw);
             }
         }
     }
@@ -1232,45 +1252,43 @@ public class CellShell extends CommandInterpreter
       return _nucleus.getCellDomainName()+"\n" ;
    }
 
-    @Command(name = "check", hint = "check variable(s) status",
-            description = "checks if all of the specified variables are set. "+
-                    "Returns an error if it is not.")
+    @Command(name = "check", hint = "check if variables are defined",
+            description = "Determines if all variables are defined. " +
+                    "An error is return if at least one of the variables " +
+                    "is not defined. When used with the strong " +
+                    "option, an error is return if at least one of the " +
+                    "defined variables is empty or contains whitespaces")
     public class CheckCommand implements Callable<String>
     {
-        @Argument(usage = "Specify the variable you want to check. " +
-                        "The argument can be a single variable or " +
-                        "list of variables which must be separated " +
-                        "with a blank space. At least one variable " +
-                        "must be provided.")
-        String [] name;
+        @Argument(usage = "One or more variable names you want to check")
+        String [] varName;
 
         @Option(name = "strong", metaVar = "strong",
-                usage = "The strong option requires that all variables " +
-                        "must not be the zero string and must not only " +
-                        "contain blanks")
+                usage = "This return an error if any of the variables " +
+                        "is empty or contains whitespaces")
         boolean strong;
 
 
         @Override
         public String call() throws Exception
         {
-            String varName;
+            String name;
             Object value;
-            for( int i= 0 ;i < name.length ; i++ ){
-                varName = name[i] ;
-                if( ( value = _environment.get( varName ) ) == null ) {
-                    value = _nucleus.getDomainContext().get(varName);
+            for( int i= 0 ;i < varName.length ; i++ ){
+                name = varName[i] ;
+                if( ( value = _environment.get( name ) ) == null ) {
+                    value = _nucleus.getDomainContext().get(name);
                 }
                 if( value == null ) {
                     throw new
-                            CommandException(1, "variable is not defined : " + varName);
+                            CommandException(1, "variable is not defined : " + name);
                 }
 
                 if( strong ){
                     String strValue = value.toString() ;
                     if( strValue.trim().equals("") ) {
                         throw new
-                                CommandException(2, "variable is defined but empty : " + varName);
+                                CommandException(2, "variable is defined but empty : " + name);
                     }
                 }
             }
