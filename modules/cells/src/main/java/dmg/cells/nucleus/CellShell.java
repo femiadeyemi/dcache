@@ -378,9 +378,10 @@ public class CellShell extends CommandInterpreter
    //   getroutes, getcelltunnelinfos, getcellinfos
    //
    @Command(name = "getroutes", hint = "list all routes",
-           description = "Display all message routes " +
-                   "available within a domain. This includes the cell name, " +
-                   "domain name, cell address and route type")
+           description = "List all message routes available within " +
+                   "your current domain. The returned information " +
+                   "comprises of the cell name, domain name, cell " +
+                   "address and route type")
    public class GetroutesCommand implements Callable<CellRoute[]>
    {
        @Override
@@ -390,8 +391,8 @@ public class CellShell extends CommandInterpreter
        }
    }
 
-    @Command(name = "getcelltunnelinfos",
-            description = "list all tunnel cells information.")
+    @Command(name = "getcelltunnelinfos", hint = "list all tunnel cells information.",
+            description = "")
     public class GetcelltunnelinfosCommand implements Callable<CellTunnelInfo[]>
     {
         @Override
@@ -403,12 +404,13 @@ public class CellShell extends CommandInterpreter
     }
 
     @Command(name = "getcellinfo", hint = "display cell information",
-            description = "The getcellinfo command gives a brief information on " +
-                    "a particular cell of interest. The information consist of the cell name, " +
-                    "cell state, event queue size, thread count, cell class and lastly short Info")
+            description = "Shows a brief information on a specified cell. " +
+                    "The information consist of the cell name, " +
+                    "the state of the cell, event queue size, thread count, " +
+                    "the class of the cell and lastly short Info.")
     public class GetcellinfoCommand implements Callable<CellInfo>
     {
-        @Argument(usage = "Specify the cell name")
+        @Argument(usage = "The cell name")
         String cellName;
 
         @Override
@@ -423,11 +425,12 @@ public class CellShell extends CommandInterpreter
         }
     }
 
-    @Command(name = "getcellinfos", hint = "get information on all cells within a domain",
-            description = "The getcellinfos command is for obtaining a summarised " +
-                    "information on all cells (in a table format) within a domain. " +
-                    "From left to right, the information displayed consist of the cell name, " +
-                    "cell state, event queue size, thread count, cell class and lastly short Info")
+    @Command(name = "getcellinfos", hint = "get information on all cells",
+            description = "Display a summarised information on all cells " +
+                    "(in a table format) within your current domain. The " +
+                    "information (from left to right) consist of the cell " +
+                    "name, cell state, event queue size, thread count, " +
+                    "cell class and lastly \"short Info\".")
     public class GetcellinfosCommand implements Callable<CellInfo[]>
     {
         @Override
@@ -449,16 +452,15 @@ public class CellShell extends CommandInterpreter
     }
 
    @Command(name = "getcontext", hint = "view a context or list all contexts",
-           description = "The getcontext command can be use to list all " +
-                   "the contexts in a domain or to view the content." +
-                   "of a particular context.")
+           description = "List all the contexts in your current domain. " +
+                   "When a name of a particular context (within the domain) " +
+                   "is specified after the getcontext command, the content " +
+                   "of this context will be displayed.")
    public class GetcontextCommand implements Callable<Serializable>
    {
        @Argument(required = false,
-               usage = "Specify the name of a particular context " +
-               "to view. This optional argument is case sensitive " +
-                       "and if no context name is provided, a " +
-                       "list of all the contexts will be displayed.")
+               usage = "The name of a particular context " +
+               "to view.")
        String contextName;
 
        @Override
