@@ -452,10 +452,12 @@ public class CellShell extends CommandInterpreter
     }
 
    @Command(name = "getcontext", hint = "view a context or list all contexts",
-           description = "List all the contexts in your current domain. " +
-                   "When a name of a particular context (within the domain) " +
-                   "is specified after the getcontext command, the content " +
-                   "of this context will be displayed.")
+           description = "This command has two usage: it can either be use " +
+                   "to return the list of all the contexts in your current domain " +
+                   "and " +
+                   "when a name of a particular context (within the current domain) " +
+                   "is specified after the command, this will return the content " +
+                   "of this context specified.")
    public class GetcontextCommand implements Callable<Serializable>
    {
        @Argument(required = false,
@@ -482,7 +484,55 @@ public class CellShell extends CommandInterpreter
    //
    //   waitfor cell/domain/context
    //
-   public static final String hh_waitfor=
+    @Command(name = "waitfor", hint = "",
+            description = "")
+    public class WaitforCommand implements Callable<String>
+   {
+       @Argument(index = 0,valueSpec = "context|cell|domain",
+               usage = "")
+       String what;
+
+       @Argument(index = 1,
+               usage = "")
+       String name;
+
+       @Argument(index = 2,
+               usage = "", required = false)
+       String cellName;
+
+       @Option(name ="i")
+       int check = 1;
+
+       @Option(name ="wait")
+       int waitTime = 0;
+
+
+       public String call() throws Exception
+       {
+           if( waitTime < 0 ) {
+               waitTime = 0;
+           }
+
+
+           switch (what) {
+               case "cell":
+                   return _waitForCell(name, waitTime, check, null);
+               case "domain":
+                   return _waitForCell("System@" + name, waitTime, check, null);
+               case "context":
+                   if (cellName != null) {
+                       return _waitForCell("System@" + cellName,
+                               waitTime, check, "test context " + name);
+                   } else {
+                       return _waitForContext(name, waitTime, check);
+                   }
+           }
+
+           throw new CommandException( "Unknown Observable : "+what ) ;
+       }
+   }
+
+   /*public static final String hh_waitfor=
        "context|cell|domain <objectName> [<domain>] [-i=<checkInterval>] [-wait=<maxTime>]" ;
    public static final String fh_waitfor =
        "waitfor [options]  context  <contextName> [<domainName]\n" +
@@ -521,7 +571,7 @@ public class CellShell extends CommandInterpreter
        }
 
       throw new CommandException( "Unknown Observable : "+what ) ;
-   }
+   }*/
    private String _waitForContext( String contextName , int waitTime , int check )
            throws CommandException {
 
@@ -1892,7 +1942,78 @@ public class CellShell extends CommandInterpreter
         }
     }
 
-   public static final String hh_eval = "upn expression" ;
+    @Command(name = "eval", hint = "", description = "")
+    public class EvalCommand implements Callable<String>
+    {
+        @Argument
+        String[] expr;
+
+        @Override
+        public String call() throws Exception
+        {
+            Stack<String> v = new Stack<>() ;
+            for( int i = 0 ; i < expr.length ; i++ ){
+
+                if( expr[i].equals("==") ){
+                    //                   -------------
+                    Object right = v.pop() ;
+                    Object left  = v.pop() ;
+                    v.push(right.equals(left) ?"0" :"1") ;
+
+                }else if( expr[i].equals("!=") ){
+                    //                   -------------------
+                    Object right = v.pop() ;
+                    Object left  = v.pop() ;
+                    v.push(right.equals(left)?"1":"0") ;
+
+                }else if( expr[i].equals("&&") ){
+                    //                   -------------------
+                    Object right = v.pop() ;
+                    Object left  = v.pop() ;
+                    v.push(
+                            right.equals("0")&&left.equals("0")?
+                                    "0":"1") ;
+
+                }else if( expr[i].equals("||") ){
+                    //                   -------------------
+                    Object right = v.pop() ;
+                    Object left  = v.pop() ;
+                    v.push(
+                            right.equals("0")||left.equals("0")?
+                                    "0":"1") ;
+
+                }else if( expr[i].equals("!") ){
+                    //                   -------------------
+                    Object right = v.pop() ;
+                    v.push(right.equals("0")?"1":"0") ;
+
+                }else{
+                    v.push( expr[i].trim() ) ;
+                }
+
+            }
+            if( v.size() != 1 ) {
+                throw new
+                        CommandException( 2 , "Stack position violation ("+v.size()+")" ) ;
+            }
+
+            String result = v.firstElement() ;
+            if( result.equals("0") ) {
+                return "";
+            }
+
+            int rc;
+            try{
+                rc = Integer.parseInt(result) ;
+            }catch(NumberFormatException nfe){
+                rc = 3 ;
+            }
+
+            throw new
+                    CommandEvaluationException( rc , "Eval Result : "+result ) ;
+        }
+    }
+   /*public static final String hh_eval = "upn expression" ;
    public String ac_eval_$_1_99( Args args )throws CommandException{
        Stack<String> v = new Stack<>() ;
        for( int i = 0 ; i < args.argc() ; i++ ){
@@ -1955,22 +2076,130 @@ public class CellShell extends CommandInterpreter
        throw new
        CommandEvaluationException( rc , "Eval Result : "+result ) ;
 
-   }
-   public static final String hh_define_context = "<contextName> [<delimiter>]" ;
+   }*/
+
+    @Command(name = "define context", hint = "", description = "")
+    public class DefineContextCommand implements Callable<String>
+    {
+        @Argument(index = 0)
+        String contextName;
+
+        @Argument(index = 1, required = false)
+        String delimiter;
+
+        @Override
+        public String call() throws Exception
+        {
+            _contextName      = contextName;
+            _contextDelimiter = !(delimiter.isEmpty()) ? delimiter : "." ;
+            _contextString    = new StringBuilder() ;
+            return "" ;
+        }
+    }
+   /*public static final String hh_define_context = "<contextName> [<delimiter>]" ;
    public String ac_define_context_$_1_2( Args args ){
        _contextName      = args.argv(0) ;
        _contextDelimiter = args.argc() > 1 ? args.argv(1) : "." ;
        _contextString    = new StringBuilder() ;
        return "" ;
-   }
-   public static final String hh_define_env = "<environmentName>" ;
+   }*/
+
+    @Command(name = "define env", hint = "", description = "")
+    public class DefineEnvCommand implements Callable<String>
+    {
+        @Argument(index = 0)
+        String envName;
+
+        @Argument(index = 1, required = false)
+        String delimiter;
+
+        @Override
+        public String call() throws Exception
+        {
+            _envName      = envName ;
+            _envDelimiter = !(delimiter.isEmpty()) ? delimiter : "." ;
+            _envString    = new StringBuilder();
+            return "" ;
+        }
+    }
+   /*public static final String hh_define_env = "<environmentName>" ;
    public String ac_define_env_$_1_2( Args args ){
        _envName      = args.argv(0) ;
        _envDelimiter = args.argc() > 1 ? args.argv(1) : "." ;
        _envString    = new StringBuilder();
        return "" ;
-   }
-   public static final String hh_load_context = "[-b] <contextName> <fileName>" ;
+   }*/
+
+    @Command(name = "load context", hint = "", description = "")
+    public class LoadContextCommand implements Callable<String>
+    {
+        @Argument(index = 0)
+        String name;
+
+        @Argument(index = 1)
+        String fileName;
+
+        @Option(name = "b", metaVar = "b")
+        boolean  b;
+
+
+        @Override
+        public String call() throws Exception
+        {
+            File   file = new File( fileName ) ;
+
+            if( ! file.canRead()  ) {
+                throw new CommandException("File not found : " + fileName);
+            }
+
+            if(b){
+                FileInputStream in = null ;
+                try{
+                    long fileLength = file.length() ;
+                    byte [] buffer = new byte[(int)fileLength] ;
+                    in = new FileInputStream( file ) ;
+                    in.read( buffer ) ;
+                    in.close() ;
+                    _nucleus.getDomainContext().put( name , buffer ) ;
+                }catch( IOException ioe ){
+
+                    throw new CommandException( 11 ,
+                            "Problem with file : "+file+" : "+ioe ) ;
+                }finally{
+                    if(in != null) {
+                        try {
+                            in.close();
+                        } catch (IOException eeee) {
+                        }
+                    }
+                }
+            }else{
+                StringBuilder sb = new StringBuilder();
+                BufferedReader reader = null ;
+                String         line;
+                try{
+                    reader = new BufferedReader( new FileReader( file ) ) ;
+                    while( ( line = reader.readLine() ) != null ) {
+                        sb.append(line).append("\n");
+                    }
+                }catch( IOException ioe ){
+
+                    throw new CommandException( 11 ,
+                            "Problem with file : "+file+" : "+ioe ) ;
+                }finally{
+                    if(reader != null) {
+                        try {
+                            reader.close();
+                        } catch (IOException eeee) {
+                        }
+                    }
+                }
+                _nucleus.getDomainContext().put( name , sb.toString() ) ;
+            }
+            return "Loaded ... " ;
+        }
+    }
+   /*public static final String hh_load_context = "[-b] <contextName> <fileName>" ;
    public String ac_load_context_$_2( Args args ) throws CommandException {
       String name = args.argv(0) ;
       File   file = new File( args.argv(1) ) ;
@@ -2024,12 +2253,76 @@ public class CellShell extends CommandInterpreter
          _nucleus.getDomainContext().put( name , sb.toString() ) ;
       }
       return "Loaded ... " ;
-   }
+   }*/
    ////////////////////////////////////////////////////////////
    //
    // the incredible copy command
    //
-   public static final String fh_copy =
+
+    @Command(name = "copy", hint = "copy source to destination",
+            description = "")
+    public class CopyCommand implements Callable<String>
+    {
+        @Argument(index = 0, valueSpec = "from")
+        String uriFrom;
+
+        @Argument(index = 1, valueSpec = "to")
+        String uriTo;
+
+        @Override
+        public String call() throws Exception
+        {
+            URI from;
+            URI to;
+            try {
+                from = new URI(uriFrom);
+                to = new URI(uriTo);
+            } catch (URISyntaxException e) {
+                throw new CommandException(43, "Invalid URL: "+ e.toString());
+            }
+            if (from.equals(to)) {
+                throw new CommandException(43, "Source and destination URL must not be the same");
+            }
+
+            String source;
+            try {
+                try (BufferedReader in = new BufferedReader(open(from))) {
+                    String line;
+                    StringBuilder sb = new StringBuilder();
+                    while ((line = in.readLine()) != null) {
+                        sb.append(line).append("\n");
+                    }
+                    source = sb.toString();
+                }
+
+            } catch (IOException e) {
+                throw new CommandException(43, e.toString());
+            }
+
+            String scheme = to.getScheme();
+            if (scheme == null) {
+                scheme = "env";
+            }
+
+            String destination = to.getSchemeSpecificPart();
+            if (destination == null) {
+                throw new CommandException( 43 , "Destination missing");
+            }
+
+            switch (scheme) {
+                case "env":
+                    _environment.put(destination, source);
+                    break;
+                case "context":
+                    _nucleus.getDomainContext().put(destination, source);
+                    break;
+                default:
+                    throw new CommandException(43, "Unsupported scheme for destination:" + scheme);
+            }
+            return "" ;
+        }
+    }
+   /*public static final String fh_copy =
       "   copy  <fromCellURL>  <toCellURL>\n"+
       "       <fromCellURL> : <extendedCellURL>\n"+
       "                        Protocols : env/context/cell/http/file/ftp\n"+
@@ -2091,13 +2384,30 @@ public class CellShell extends CommandInterpreter
            throw new CommandException(43, "Unsupported scheme for destination:" + scheme);
        }
       return "" ;
-   }
+   }*/
 
    ////////////////////////////////////////////////////////////
    //
    // ----------------------------------------------
    //
-   public static final String hh_exit = "[<exitCode> [<exitMessage>]]" ;
+
+    @Command(name = "exit", hint = "", description = "")
+    public class ExitCommand implements Callable<String>
+    {
+        @Argument(index = 0, required = false)
+        int exitCode;
+
+        @Argument(index = 1, required = false)
+        String exitMessage;
+
+
+        @Override
+        public String call() throws Exception
+        {
+            throw new CommandExitException( exitMessage , exitCode ) ;
+        }
+    }
+   /*public static final String hh_exit = "[<exitCode> [<exitMessage>]]" ;
    public String ac_exit_$_0_2( Args args ) throws CommandExitException {
        String msg = "" ;
        int    code = 0 ;
@@ -2112,7 +2422,7 @@ public class CellShell extends CommandInterpreter
          }
        }
        throw new CommandExitException( msg , code ) ;
-   }
+   }*/
 
     private Reader open(URI uri)
         throws IOException
