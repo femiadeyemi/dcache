@@ -1440,7 +1440,7 @@ public class CellShell extends CommandInterpreter
    public static final String hh_set_context = "[-c][-s] <contextName> <value>" ;
    public static final String hh_set_env     = "[-c][-s] <environmentName> <value>" ;
    public String ac_set_context_$_2( Args args )throws CommandException{
-      return set_dict( args , _nucleus.getDomainContext() ) ;
+      return set_dict(args, _nucleus.getDomainContext()) ;
    }
    public String ac_set_env_$_2( Args args )throws CommandException{
       return set_dict( args , _environment ) ;
@@ -1500,17 +1500,17 @@ public class CellShell extends CommandInterpreter
    public static final String hh_unset_context="<contextName>" ;
    public static final String hh_unset_env    ="<environmentName>" ;
    public String ac_unset_context_$_1( Args args )throws CommandException {
-      return unset_dict( args , _nucleus.getDomainContext() ) ;
+      return unset_dict(args, _nucleus.getDomainContext()) ;
    }
    public String ac_unset_env_$_1( Args args )throws CommandException {
-      return unset_dict( args , _environment ) ;
+      return unset_dict(args, _environment) ;
    }
 
     private String unset_dict(Args args, Map<String,Object> dict)
            throws CommandException
     {
       String name = args.argv(0) ;
-      Object o = dict.remove( name ) ;
+      Object o = dict.remove(name) ;
       if( o == null ){
          throw new
          CommandException ( "Not found : "+name ) ;
@@ -1734,6 +1734,24 @@ public class CellShell extends CommandInterpreter
         }
     }
 
+    @Command(name = "exec context", hint = "", description = "")
+    public class ExecContextCommand implements Callable<String>
+    {
+        //@Argument(valueSpec = "")
+
+
+        @Override
+        public String call() throws Exception
+        {
+            try {
+                URI uri = new URI("context", args.argv(0), null);
+                args.shift();
+                return run_reader(uri, args);
+            } catch (URISyntaxException e) {
+                throw new CommandException(43 , e.getMessage());
+            }
+        }
+    }
     public final static String fh_exec_context = fh_exec;
     public final static String hh_exec_context =
         "[-shell] [-nooutput] [-loop=<variable>] [-ifok[=<variable>]|-ifnotok[=<variable>}] <contextName> [<args>]";
@@ -1760,8 +1778,7 @@ public class CellShell extends CommandInterpreter
     }
 
     public void execute(String source, Reader in, Args args)
-        throws CommandExitException, IOException
-    {
+        throws CommandExitException, IOException {
         try (Writer out = new BufferedLineWriter(new Slf4jInfoWriter(_log));
              Writer err = new BufferedLineWriter(new Slf4jErrorWriter(_log))) {
             execute(source, in, out, err, args);
