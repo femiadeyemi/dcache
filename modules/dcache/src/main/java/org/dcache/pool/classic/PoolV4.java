@@ -4,6 +4,10 @@ package org.dcache.pool.classic;
 
 import com.google.common.base.Throwables;
 import com.google.common.net.InetAddresses;
+import dmg.util.command.Argument;
+import dmg.util.command.Command;
+import dmg.util.command.CommandLine;
+import dmg.util.command.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
@@ -26,6 +30,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1870,31 +1875,79 @@ public class PoolV4
 
     }
 
-    public static final String hh_set_sticky = "# Deprecated";
-    public String ac_set_sticky_$_0_1(Args args)
+    @Command(name = "set sticky", hint = "Deprecated",
+            description = "The command is deprecated and has no effect")
+    public class SetStickyCommand implements Callable<String>
     {
-        return "The command is deprecated and has no effect";
+        @Override
+        public String call()
+        {
+            return "The command is deprecated and has no effect";
+        }
     }
 
-    public static final String hh_set_cleaning_interval = "<interval/sec>";
+    @Command(name = "set cleaning interval", hint = "", description = "")
+    public class SetCleaningIntervalCommand implements Callable<String>
+    {
+        @Argument(usage = "in seconds")
+        String interval;
+
+
+        @Override
+        public String call() throws Exception
+        {
+            _cleaningInterval = Integer.parseInt(interval);
+            _log.info("set cleaning interval to " + _cleaningInterval);
+            return "";
+        }
+    }
+    /*public static final String hh_set_cleaning_interval = "<interval/sec>";
     public String ac_set_cleaning_interval_$_1(Args args)
     {
         _cleaningInterval = Integer.parseInt(args.argv(0));
         _log.info("set cleaning interval to " + _cleaningInterval);
         return "";
-    }
+    }*/
 
-    public static final String hh_mover_set_max_active = "<maxActiveIoMovers> -queue=<queueName>";
+    //public static final String hh_mover_set_max_active = "<maxActiveIoMovers> -queue=<queueName>";
     public static final String hh_mover_queue_ls = "";
     public static final String hh_mover_ls = "[-binary [jobId] ]";
-    public static final String hh_mover_remove = "<jobId>";
-    public static final String hh_mover_kill = "<jobId> [-force]" ;
-    public static final String hh_p2p_set_max_active = "<maxActiveIoMovers>";
+    //public static final String hh_mover_remove = "<jobId>";
+    //public static final String hh_mover_kill = "<jobId> [-force]" ;
+    //public static final String hh_p2p_set_max_active = "<maxActiveIoMovers>";
     public static final String hh_p2p_ls = "[-binary [jobId] ]";
-    public static final String hh_p2p_remove = "<jobId>; OBSOLETE: use: mover remove -queue=" + P2P_QUEUE_NAME;
-    public static final String hh_p2p_kill = "<jobId> [-force]; OBSOLETE: use: mover kill -queue=" + P2P_QUEUE_NAME;
+    //public static final String hh_p2p_remove = "<jobId>; OBSOLETE: use: mover remove -queue=" + P2P_QUEUE_NAME;
 
-    public String ac_mover_set_max_active_$_1(Args args)
+    @Command(name = "mover set max active", hint = "set maximum active transfers",
+            description = "Set the maximum number of active server transfers. " +
+                    "Any further requests will be queued. Note that, this " +
+                    "value will also be used by the cost module for calculating " +
+                    "the performance cost.")
+    public class MoverSetMaxActiveCommand implements Callable<String>
+    {
+        @Argument(usage = "")
+        int maxActiveIoMovers;
+
+        @Option(name = "queue")
+        String queueName;
+
+        @Override
+        public String call() throws IllegalArgumentException
+        {
+            if (queueName == null) {
+                return mover_set_max_active(_ioQueue.getDefaultQueue(), maxActiveIoMovers);
+            }
+
+            IoScheduler js = _ioQueue.getQueue(queueName);
+
+            if (js == null) {
+                return "Not found : " + queueName;
+            }
+
+            return mover_set_max_active(js, maxActiveIoMovers);
+        }
+    }
+    /*public String ac_mover_set_max_active_$_1(Args args)
         throws NumberFormatException, IllegalArgumentException
     {
         String queueName = args.getOpt("queue");
@@ -1911,16 +1964,44 @@ public class PoolV4
 
         return mover_set_max_active(js, args);
 
-    }
+    }*/
 
-    public String ac_p2p_set_max_active_$_1(Args args)
+    @Command(name = "p2p set max active", hint = "",
+            description = "Set the maximum number of active pool-to-pool server " +
+                    "transfers. Any further requests will be queued. This value " +
+                    "will also be used by the cost module for calculating the " +
+                    "performance cost.")
+    public class P2pSetMaxActiveCommand implements Callable<String>
+    {
+        @Argument(usage = "The maximum number of active pool-to-pool server transfers")
+        int maxActiveP2PTransfers;
+
+        @Override
+        public String call() throws IllegalArgumentException
+        {
+            IoScheduler p2pQueue = _ioQueue.getQueue(P2P_QUEUE_NAME);
+            return mover_set_max_active(p2pQueue, maxActiveP2PTransfers);
+        }
+    }
+    /*public String ac_p2p_set_max_active_$_1(Args args)
         throws NumberFormatException, IllegalArgumentException
     {
         IoScheduler p2pQueue = _ioQueue.getQueue(P2P_QUEUE_NAME);
         return mover_set_max_active(p2pQueue, args);
-    }
+    }*/
 
-    private String mover_set_max_active(IoScheduler js, Args args)
+    private String mover_set_max_active(IoScheduler js, int active)
+            throws IllegalArgumentException
+    {
+        //int active = Integer.parseInt(maxActiveMovers);
+        if (active < 0) {
+            throw new IllegalArgumentException("<maxActiveMovers> must be >= 0");
+        }
+        js.setMaxActiveJobs(active);
+
+        return "Max Active Io Movers set to " + active;
+    }
+    /*private String mover_set_max_active(IoScheduler js, Args args)
         throws NumberFormatException, IllegalArgumentException
     {
         int active = Integer.parseInt(args.argv(0));
@@ -1930,7 +2011,7 @@ public class PoolV4
         js.setMaxActiveJobs(active);
 
         return "Max Active Io Movers set to " + active;
-    }
+    }*/
 
     public Object ac_mover_queue_ls_$_0_1(Args args)
     {
@@ -2021,22 +2102,67 @@ public class PoolV4
         }
     }
 
-    public String ac_mover_remove_$_1(Args args)
+    @Command(name = "mover remove", hint = "", description = "")
+    public class MoverRemoveCommand implements Callable<String>
+    {
+        @Argument(usage = "")
+        String jobId;
+
+        @Override
+        public String call() throws NoSuchElementException, NumberFormatException
+        {
+            int id = Integer.parseInt(jobId);
+            IoScheduler js = _ioQueue.getQueueByJobId(id);
+            js.cancel(id);
+            return "Removed";
+        }
+    }
+    /*public String ac_mover_remove_$_1(Args args)
         throws NoSuchElementException, NumberFormatException
     {
         int id = Integer.parseInt(args.argv(0));
         IoScheduler js = _ioQueue.getQueueByJobId(id);
         js.cancel(id);
         return "Removed";
-    }
+    }*/
 
-    public String ac_p2p_remove_$_1(Args args)
+    @Command(name = "p2p remove", hint = "Obsolete",
+            description = "This command is no longer used. " +
+                    "Instead, use: mover remove -queue=" +
+                    P2P_QUEUE_NAME + ".")
+    public class P2pPemoveCommand implements Callable<String>
+    {
+        @Override
+        public String call()
+        {
+            return "OBSOLETE: use: mover kill -queue=" + P2P_QUEUE_NAME;
+        }
+    }
+    /*public String ac_p2p_remove_$_1(Args args)
         throws NoSuchElementException, NumberFormatException
     {
         return "OBSOLETE: use: mover remove -queue=" + P2P_QUEUE_NAME;
-    }
+    }*/
 
-    public String ac_mover_kill_$_1(Args args)
+    @Command(name = "mover kill", hint = "", description = "")
+    public class MoverKillCommand implements Callable<String>
+    {
+        @Argument(usage = "")
+        String jobId;
+
+        @Option(name = "force")
+        boolean force;
+
+        @Override
+        public String call() throws NoSuchElementException, NumberFormatException
+        {
+            int id = Integer.parseInt(jobId);
+            IoScheduler js = _ioQueue.getQueueByJobId(id);
+            mover_kill(js, id, force);
+            return "Kill initialized";
+        }
+    }
+    /*public String ac_mover_kill_$_1(Args args)
         throws NoSuchElementException, NumberFormatException
     {
         int id = Integer.parseInt(args.argv(0));
@@ -2044,12 +2170,19 @@ public class PoolV4
         IoScheduler js = _ioQueue.getQueueByJobId(id);
         mover_kill(js, id, force);
         return "Kill initialized";
-    }
+    }*/
 
-    public String ac_p2p_kill_$_1(Args args)
-        throws NoSuchElementException, NumberFormatException
+    @Command(name = "p2p kill", hint = "Obsolete",
+            description = "This command is no longer used. " +
+                    "Instead, use: mover kill -queue=" +
+                    P2P_QUEUE_NAME + ".")
+    public class P2pKillCommand implements Callable<String>
     {
-        return "OBSOLETE: use: mover kill -queue=" + P2P_QUEUE_NAME;
+        @Override
+        public String call()
+        {
+            return "OBSOLETE: use: mover kill -queue=" + P2P_QUEUE_NAME;
+        }
     }
 
     private void mover_kill(IoScheduler js, int id, boolean force)
@@ -2060,13 +2193,19 @@ public class PoolV4
         js.cancel(id);
     }
 
-    public static final String hh_set_heartbeat = "<heartbeatInterval/sec>";
-    public String ac_set_heartbeat_$_0_1(Args args)
-        throws NumberFormatException
+    @Command(name = "set heartbeat", hint = "", description = "")
+    public class SetHeartbeatCommand implements Callable<String>
     {
-        if (args.argc() > 0) {
-            _pingThread.setHeartbeat(Integer.parseInt(args.argv(0)));
+        @Argument(usage = "in seconds. Default value is 30 seconds.", required = false)
+        String heartbeatInterval;
+
+        @Override
+        public String call() throws NumberFormatException
+        {
+            if (heartbeatInterval != null) {
+                _pingThread.setHeartbeat(Integer.parseInt(heartbeatInterval));
+            }
+            return "Heartbeat at " + (_pingThread.getHeartbeat());
         }
-        return "Heartbeat at " + (_pingThread.getHeartbeat());
     }
 }
