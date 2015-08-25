@@ -6,7 +6,6 @@ import com.google.common.base.Throwables;
 import com.google.common.net.InetAddresses;
 import dmg.util.command.Argument;
 import dmg.util.command.Command;
-import dmg.util.command.CommandLine;
 import dmg.util.command.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import org.springframework.beans.factory.annotation.Required;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -1533,7 +1533,31 @@ public class PoolV4
         return info;
     }
 
-    public final static String hh_set_breakeven =
+    @Command(name = "set breakeven", hint = "Set breakeven value",
+            description = "Set the breakeven parameter which is used within the space " +
+                    "cost calculation scheme. " +
+                    "This value has to be a positive number smaller than 1.0. It " +
+                    "specifies the impact of the age of the least recently used (LRU) " +
+                    "file on space cost. It the LRU file is one week old, the space " +
+                    "cost will be equal to (1 + breakeven). Note that this will not " +
+                    "be true, if the breakeven parameter has been set to a value " +
+                    "greater or equal to 1." +
+                    "")
+    public class SetBreakevenCommand implements Callable<String>
+    {
+        @Argument(usage = "Specify the breakeven value. Default value is 0.7", required = false)
+        String breakEven;
+
+        @Override
+        public String call()
+        {
+            if (breakEven != null) {
+                _breakEven = Double.parseDouble(breakEven);
+            }
+            return "BreakEven = " + _breakEven;
+        }
+    }
+    /*public final static String hh_set_breakeven =
         "[<breakEven>] # free and recoverable space";
     public String ac_set_breakeven_$_0_1(Args args)
     {
@@ -1541,9 +1565,32 @@ public class PoolV4
             _breakEven = Double.parseDouble(args.argv(0));
         }
         return "BreakEven = " + _breakEven;
-    }
+    }*/
 
-    public final static String hh_set_mover_cost_factor =
+    @Command(name = "set mover cost factor", hint = "Set mover cost factor",
+            description = "The mover cost factor controls how much the number of movers " +
+                    "affects proportional pool selection.\n\n" +
+                    "Intuitively, for every 1/f movers, where f is the mover cost " +
+                    "factor, the probability of choosing this pools is halved. When " +
+                    "set to zero, the number of movers does not affect pool selection.")
+    public class SetMoverCostFactorCommand implements Callable<String>
+    {
+        @Argument(usage = "Specify the cost factor value. Mover cost " +
+                "factor must be larger than or equal to 0.0.", required = false)
+        double value = _moverCostFactor;
+
+        @Override
+        public String call()
+        {
+            if (value < 0.0) {
+                throw new IllegalArgumentException("Mover cost factor must be larger than or equal to 0.0");
+            }
+            _moverCostFactor = value;
+
+            return "Cost factor is " + _moverCostFactor;
+        }
+    }
+    /*public final static String hh_set_mover_cost_factor =
         "[<factor>]";
     public final static String fh_set_mover_cost_factor =
         "The mover cost factor controls how much the number of movers" +
@@ -1561,7 +1608,7 @@ public class PoolV4
             _moverCostFactor = value;
         }
         return "Cost factor is " + _moverCostFactor;
-    }
+    }*/
 
     // /////////////////////////////////////////////////
     //
@@ -1651,10 +1698,28 @@ public class PoolV4
         }
     }
 
-    public static final String hh_pnfs_register = " # add entry of all files into pnfs";
-    public static final String hh_pnfs_unregister = " # remove entry of all files from pnfs";
+    @Command(name = "pnfs register", hint = "add entry of all files into pnfs",
+            description = "Register the files on this pool into the Pnfs")
+    public class PnfsRegisterCommand implements Callable<String>
+    {
+        @Override
+        public String call()
+        {
+            synchronized (_hybridInventoryLock) {
+                if (_hybridInventoryActive) {
+                    throw new IllegalArgumentException(
+                            "Hybrid inventory still active");
+                }
+                _hybridInventoryActive = true;
+                new HybridInventory(true);
+            }
+            return "";
+        }
+    }
+    //public static final String hh_pnfs_register = " # add entry of all files into pnfs";
+    //public static final String hh_pnfs_unregister = " # remove entry of all files from pnfs";
 
-    public String ac_pnfs_register(Args args)
+    /*public String ac_pnfs_register(Args args)
     {
         synchronized (_hybridInventoryLock) {
             if (_hybridInventoryActive) {
@@ -1665,9 +1730,27 @@ public class PoolV4
             new HybridInventory(true);
         }
         return "";
-    }
+    }*/
 
-    public String ac_pnfs_unregister(Args args)
+    @Command(name = "pnfs unregister", hint = "remove entry of all files from pnfs",
+            description = "Unregister the files on this pool from the pnfs.")
+    public class PnfsUnregisterCommand implements Callable<String>
+    {
+        @Override
+        public String call()
+        {
+            synchronized (_hybridInventoryLock) {
+                if (_hybridInventoryActive) {
+                    throw new IllegalArgumentException(
+                            "Hybrid inventory still active");
+                }
+                _hybridInventoryActive = true;
+                new HybridInventory(false);
+            }
+            return "";
+        }
+    }
+    /*public String ac_pnfs_unregister(Args args)
     {
         synchronized (_hybridInventoryLock) {
             if (_hybridInventoryActive) {
@@ -1678,9 +1761,29 @@ public class PoolV4
             new HybridInventory(false);
         }
         return "";
-    }
+    }*/
 
-    public static final String hh_run_hybrid_inventory = " [-destroy]";
+    @Command(name = "run hybrid inventory", hint = "", description = "")
+    public class RunHybridInventoryCommand implements Callable<String>
+    {
+        @Option(name = "destroy")
+        boolean destroy;
+
+        @Override
+        public String call()
+        {
+            synchronized (_hybridInventoryLock) {
+                if (_hybridInventoryActive) {
+                    throw new IllegalArgumentException(
+                            "Hybrid inventory still active");
+                }
+                _hybridInventoryActive = true;
+                new HybridInventory(!destroy);
+            }
+            return "";
+        }
+    }
+    /*public static final String hh_run_hybrid_inventory = " [-destroy]";
 
     public String ac_run_hybrid_inventory(Args args)
     {
@@ -1693,16 +1796,58 @@ public class PoolV4
             new HybridInventory(!args.hasOption("destroy"));
         }
         return "";
-    }
+    }*/
 
-    public static final String hh_pf = "<pnfsId>";
+    @Command(name = "pf", hint = "return the path of a pnfs",
+            description = "Get the path corresponding to a particular " +
+                    "pnfs by specifying the pnfsId.")
+    public class PfCommand implements Callable<String>
+    {
+        @Argument
+        String pnfsId;
+
+        @Override
+        public String call() throws CacheException, IllegalArgumentException
+        {
+            return _pnfs.getPathByPnfsId(new PnfsId(pnfsId)).toString();
+        }
+    }
+    /*public static final String hh_pf = "<pnfsId>";
 
     public String ac_pf_$_1(Args args) throws CacheException, IllegalArgumentException
     {
         return _pnfs.getPathByPnfsId(new PnfsId(args.argv(0))).toString();
-    }
+    }*/
 
-    public static final String hh_set_replication = "[-off] [<mgr> [<host>]]";
+    @Command(name = "set replication", hint = "",
+            description = "")
+    public class SetReplicationCommand implements Callable<String>
+    {
+        @Argument(index = 0, usage = "", required = false)
+        String mgr;
+
+        @Argument(index = 1, usage = "", required = false)
+        String host;
+
+        @Option(name = "off")
+        boolean off;
+
+
+        @Override
+        public String call()
+        {
+            if (off) {
+                setReplicationNotificationDestination("");
+            } else if (mgr != null) {
+                setReplicationNotificationDestination(mgr);
+                if (host != null) {
+                    setReplicationIp(host);
+                }
+            }
+            return _replicationHandler.toString();
+        }
+    }
+    /*public static final String hh_set_replication = "[-off] [<mgr> [<host>]]";
     public String ac_set_replication_$_0_2(Args args)
     {
         if (args.hasOption("off")) {
@@ -1714,9 +1859,33 @@ public class PoolV4
             }
         }
         return _replicationHandler.toString();
-    }
+    }*/
 
-    public static final String hh_pool_suppress_hsmload = "on|off";
+    @Command(name = "pool suppress hsmload", hint = "", description = "")
+    public class PoolSuppressHsmloadCommand implements Callable<String>
+    {
+        @Argument(metaVar = "on|off", usage = "")
+        String mode;
+
+        @Override
+        public String call() throws IllegalArgumentException
+        {
+            switch (mode) {
+                case "on":
+                    _suppressHsmLoad = true;
+                    break;
+                case "off":
+                    _suppressHsmLoad = false;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Illegal syntax : pool suppress hsmload on|off");
+            }
+
+            return "hsm load suppression swithed : "
+                    + (_suppressHsmLoad ? "on" : "off");
+        }
+    }
+    /*public static final String hh_pool_suppress_hsmload = "on|off";
     public String ac_pool_suppress_hsmload_$_1(Args args)
     {
         String mode = args.argv(0);
@@ -1733,9 +1902,35 @@ public class PoolV4
 
         return "hsm load suppression swithed : "
             + (_suppressHsmLoad ? "on" : "off");
-    }
+    }*/
 
-    public static final String hh_set_duplicate_request = "none|ignore|refresh";
+    @Command(name = "set duplicate request", hint = "", description = "")
+    public class SetDuplicateRequestCommand implements Callable<String>
+    {
+        @Argument(metaVar = "none|ignore|refresh", usage = "")
+        String mode;
+
+        @Override
+        public String call() throws CommandSyntaxException
+        {
+            switch (mode) {
+                case "none":
+                    _dupRequest = DUP_REQ_NONE;
+                    break;
+                case "ignore":
+                    _dupRequest = DUP_REQ_IGNORE;
+                    break;
+                case "refresh":
+                    _dupRequest = DUP_REQ_REFRESH;
+                    break;
+                default:
+                    throw new CommandSyntaxException("Not Found : ",
+                            "Usage : pool duplicate request none|ignore|refresh");
+            }
+            return "";
+        }
+    }
+    /*public static final String hh_set_duplicate_request = "none|ignore|refresh";
     public String ac_set_duplicate_request_$_1(Args args)
         throws CommandSyntaxException
     {
@@ -1755,15 +1950,98 @@ public class PoolV4
                     "Usage : pool duplicate request none|ignore|refresh");
         }
         return "";
-    }
+    }*/
 
-    public static final String hh_set_p2p = "integrated|separated; OBSOLETE";
+    @Command(name = "set p2p", hint = "Obsolete command",
+            description = "This command is no longer in used.")
+    public class SetP2pCommand implements Callable<String>
+    {
+        @Override
+        public String call()
+        {
+            return "WARNING: this command is obsolete";
+        }
+    }
+    /*public static final String hh_set_p2p = "integrated|separated; OBSOLETE";
     public String ac_set_p2p_$_1(Args args)
     {
         return "WARNING: this command is obsolete";
-    }
+    }*/
 
-    public static final String fh_pool_disable = "   pool disable [options] [ <errorCode> [<errorMessage>]]\n"
+    @Command(name = "pool disable", hint = "suspend sending 'up messages'",
+            description = "")
+    public class PoolDisableCommand implements Callable<String>
+    {
+        @Argument(index = 0, usage = "", required = false)
+        String errorCode;
+
+        @Argument(index = 1, usage = "", required = false)
+        String errorMessage;
+
+        @Option(name = "strict")
+        boolean strict;
+
+        @Option(name = "stage")
+        boolean stage;
+
+        @Option(name = "fetch")
+        boolean fetch;
+
+        @Option(name = "store")
+        boolean store;
+
+        @Option(name = "p2p-client")
+        boolean p2pClient;
+
+        @Option(name = "p2p-server")
+        boolean p2pServer;
+
+        @Option(name = "rdonly")
+        boolean rdonly;
+
+        @Override
+        public String call() throws Exception
+        {
+            if (_poolMode.isDisabled(PoolV2Mode.DISABLED_DEAD)) {
+                return "The pool is dead and a restart is required to enable it";
+            }
+
+            int rc = (errorCode != null) ? Integer.parseInt(errorCode) : 1;
+            String rm = (errorMessage != null) ? errorMessage : "Operator intervention";
+
+            int modeBits = PoolV2Mode.DISABLED;
+            if (strict) {
+                modeBits |= PoolV2Mode.DISABLED_STRICT;
+            }
+            if (stage) {
+                modeBits |= PoolV2Mode.DISABLED_STAGE;
+            }
+            if (fetch) {
+                modeBits |= PoolV2Mode.DISABLED_FETCH;
+            }
+            if (store) {
+                modeBits |= PoolV2Mode.DISABLED_STORE;
+            }
+            if (p2pClient) {
+                modeBits |= PoolV2Mode.DISABLED_P2P_CLIENT;
+            }
+            if (p2pServer) {
+                modeBits |= PoolV2Mode.DISABLED_P2P_SERVER;
+            }
+            if (rdonly) {
+                modeBits |= PoolV2Mode.DISABLED_RDONLY;
+            }
+
+        /*
+         * No need for alarm here.
+         */
+
+            disablePool(modeBits, rc, rm);
+
+            return "Pool " + _poolName + " " + _poolMode;
+        }
+    }
+    /*public static final String fh_pool_disable = "   pool disable [options] [ <errorCode> [<errorMessage>]]\n"
         + "      OPTIONS :\n"
         + "        -fetch    #  disallows fetch (transfer to client)\n"
         + "        -stage    #  disallows staging (from HSM)\n"
@@ -1804,16 +2082,30 @@ public class PoolV4
             modeBits |= PoolV2Mode.DISABLED_RDONLY;
         }
 
-        /*
+        *//*
          * No need for alarm here.
-         */
+         *//*
 
         disablePool(modeBits, rc, rm);
 
         return "Pool " + _poolName + " " + _poolMode;
-    }
+    }*/
 
-    public static final String hh_pool_enable = " # resume sending up messages'";
+    @Command(name = "pool enable", hint = "resume sending up messages",
+            description = "")
+    public class PoolEnableCommand implements Callable<String>
+    {
+        @Override
+        public String call()
+        {
+            if (_poolMode.isDisabled(PoolV2Mode.DISABLED_DEAD)) {
+                return "The pool is dead and a restart is required to enable it";
+            }
+            enablePool();
+            return "Pool " + _poolName + " enabled";
+        }
+    }
+    /*public static final String hh_pool_enable = " # resume sending up messages'";
     public String ac_pool_enable(Args args)
     {
         if (_poolMode.isDisabled(PoolV2Mode.DISABLED_DEAD)) {
@@ -1821,9 +2113,19 @@ public class PoolV4
         }
         enablePool();
         return "Pool " + _poolName + " enabled";
-    }
+    }*/
 
-    public static final String hh_set_max_movers = "!!! Please use 'mover|st|rh set max active <jobs>'";
+    @Command(name = "set max movers", hint = "Obsolete command",
+            description = "This command is no longer in used.")
+    public class SetMaxMoversCommand implements Callable<String>
+    {
+        @Override
+        public String call()
+        {
+            return "OBSOLETE: Please use 'mover|st|rh set max active <jobs>'";
+        }
+    }
+    /*public static final String hh_set_max_movers = "!!! Please use 'mover|st|rh set max active <jobs>'";
     public String ac_set_max_movers_$_1(Args args)
         throws IllegalArgumentException
     {
@@ -1833,9 +2135,32 @@ public class PoolV4
         }
         return "Please use 'mover|st|rh set max active <jobs>'";
 
-    }
+    }*/
 
-    public static final String hh_set_report_remove = "on|off";
+    @Command(name = "set report remove", hint = "",
+            description = "")
+    public class SetReportRemoveCommand implements Callable<String>
+    {
+        @Argument(metaVar = "on|off", usage = "")
+        String onoff;
+
+        @Override
+        public String call() throws CommandSyntaxException
+        {
+            switch (onoff) {
+                case "on":
+                    _reportOnRemovals = true;
+                    break;
+                case "off":
+                    _reportOnRemovals = false;
+                    break;
+                default:
+                    throw new CommandSyntaxException("Invalid value : " + onoff);
+            }
+            return "";
+        }
+    }
+    /*public static final String hh_set_report_remove = "on|off";
     public String ac_set_report_remove_$_1(Args args)
         throws CommandSyntaxException
     {
@@ -1851,9 +2176,36 @@ public class PoolV4
             throw new CommandSyntaxException("Invalid value : " + onoff);
         }
         return "";
-    }
+    }*/
 
-    public static final String hh_crash = "disabled|shutdown|exception";
+    @Command(name = "crash", hint = "", description = "")
+    public class CrashCommand implements Callable<String>
+    {
+        @Argument(metaVar = "disabled|shutdown|exception", usage = "", required = false)
+        String crash;
+
+        @Override
+        public String call() throws IllegalArgumentException
+        {
+            if (crash == null || crash.isEmpty()) {
+                return "Crash is " + (_crashEnabled ? _crashType : "disabled");
+
+            } else if (crash.equals("shutdown")) {
+                _crashEnabled = true;
+                _crashType = "shutdown";
+            } else if (crash.equals("exception")) {
+                _crashEnabled = true;
+                _crashType = "exception";
+            } else if (crash.equals("disabled")) {
+                _crashEnabled = false;
+            } else {
+                throw new IllegalArgumentException("crash disabled|shutdown|exception");
+            }
+
+            return "Crash is " + (_crashEnabled ? _crashType : "disabled");
+        }
+    }
+    /*public static final String hh_crash = "disabled|shutdown|exception";
     public String ac_crash_$_0_1(Args args) throws IllegalArgumentException
     {
         if (args.argc() < 1) {
@@ -1873,7 +2225,7 @@ public class PoolV4
 
         return "Crash is " + (_crashEnabled ? _crashType : "disabled");
 
-    }
+    }*/
 
     @Command(name = "set sticky", hint = "Deprecated",
             description = "The command is deprecated and has no effect")
@@ -1910,12 +2262,12 @@ public class PoolV4
     }*/
 
     //public static final String hh_mover_set_max_active = "<maxActiveIoMovers> -queue=<queueName>";
-    public static final String hh_mover_queue_ls = "";
-    public static final String hh_mover_ls = "[-binary [jobId] ]";
+    //public static final String hh_mover_queue_ls = "";
+    //public static final String hh_mover_ls = "[-binary [jobId] ]";
     //public static final String hh_mover_remove = "<jobId>";
     //public static final String hh_mover_kill = "<jobId> [-force]" ;
     //public static final String hh_p2p_set_max_active = "<maxActiveIoMovers>";
-    public static final String hh_p2p_ls = "[-binary [jobId] ]";
+    //public static final String hh_p2p_ls = "[-binary [jobId] ]";
     //public static final String hh_p2p_remove = "<jobId>; OBSOLETE: use: mover remove -queue=" + P2P_QUEUE_NAME;
 
     @Command(name = "mover set max active", hint = "set maximum active transfers",
@@ -2013,7 +2365,33 @@ public class PoolV4
         return "Max Active Io Movers set to " + active;
     }*/
 
-    public Object ac_mover_queue_ls_$_0_1(Args args)
+    @Command(name = "mover queue ls", hint = "", description = "")
+    public class MoverQueueLsCommand implements Callable<Serializable>
+    {
+        @Option(name = "l")
+        boolean l;
+
+        @Override
+        public Serializable call()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if (l) {
+                for (IoScheduler js : _ioQueue.getQueues()) {
+                    sb.append(js.getName())
+                            .append(" ").append(js.getActiveJobs())
+                            .append(" ").append(js.getMaxActiveJobs())
+                            .append(" ").append(js.getQueueSize()).append("\n");
+                }
+            } else {
+                for (IoScheduler js : _ioQueue.getQueues()) {
+                    sb.append(js.getName()).append("\n");
+                }
+            }
+            return sb.toString();
+        }
+    }
+    /*public Object ac_mover_queue_ls_$_0_1(Args args)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -2030,9 +2408,56 @@ public class PoolV4
             }
         }
         return sb.toString();
-    }
+    }*/
 
-    public Object ac_mover_ls_$_0_1(Args args)
+    @Command(name = "mover ls", hint = "List client transfer request",
+            description = "List the active and waiting client transfer requests. " +
+                    "Without parameter all transfers are listed. With -queue " +
+                    "all requests sorted according to the mover queue are " +
+                    "listed. If a queue is explicitly specified, only transfers " +
+                    "in that mover queue are listed.")
+    public class MoverLsCommand implements Callable<Serializable>
+    {
+        @Argument(usage = "", required = false)
+        String  jobId;
+
+        @Option(name = "queue", metaVar = "queueName")
+        String queueName;
+
+        @Option(name = "binary")
+        boolean binary;
+
+        @Override
+        public Serializable call() throws NoSuchElementException, NumberFormatException
+        {
+            if (binary && jobId != null) {
+                int id = Integer.parseInt(jobId);
+                IoScheduler js = _ioQueue.getQueueByJobId(id);
+                return js.getJobInfo(id);
+            }
+
+            if (queueName == null) {
+                return (Serializable) mover_ls(_ioQueue.getQueues(), binary);
+            }
+
+            if (queueName.length() == 0) {
+                StringBuilder sb = new StringBuilder();
+                for (IoScheduler js : _ioQueue.getQueues()) {
+                    sb.append("[").append(js.getName()).append("]\n");
+                    sb.append(mover_ls(js, binary).toString());
+                }
+                return sb.toString();
+            }
+
+            IoScheduler js = _ioQueue.getQueue(queueName);
+            if (js == null) {
+                throw new NoSuchElementException(queueName);
+            }
+
+            return (Serializable) mover_ls(js, binary);
+        }
+    }
+    /*public Object ac_mover_ls_$_0_1(Args args)
             throws NoSuchElementException, NumberFormatException
     {
         String queueName = args.getOpt("queue");
@@ -2064,9 +2489,32 @@ public class PoolV4
 
         return mover_ls(js, binary);
 
-    }
+    }*/
 
-    public Object ac_p2p_ls_$_0_1(Args args)
+    @Command(name = "p2p ls", hint = "", description = "")
+    public class P2pLsCommand implements Callable<Serializable>
+    {
+        @Argument(usage = "")
+        String jobId;
+
+        @Option(name = "binary")
+        boolean binary;
+
+        @Override
+        public Serializable call() throws NoSuchElementException, NumberFormatException
+        {
+            IoScheduler p2pQueue = _ioQueue.getQueue(P2P_QUEUE_NAME);
+
+            if (binary && jobId != null) {
+                int id = Integer.parseInt(jobId);
+                IoScheduler js = _ioQueue.getQueueByJobId(id);
+                return js.getJobInfo(id);
+            }
+
+            return (Serializable) mover_ls(p2pQueue, binary);
+        }
+    }
+    /*public Object ac_p2p_ls_$_0_1(Args args)
             throws NoSuchElementException, NumberFormatException
     {
         IoScheduler p2pQueue = _ioQueue.getQueue(P2P_QUEUE_NAME);
@@ -2079,7 +2527,7 @@ public class PoolV4
         }
 
         return mover_ls(p2pQueue, binary);
-    }
+    }*/
 
     private Object mover_ls(IoScheduler js, boolean binary) {
         return mover_ls(Arrays.asList(js), binary);
