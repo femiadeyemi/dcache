@@ -1076,7 +1076,7 @@ public class PoolV4
 
         List<StickyRecord> stickyRecords = Collections.emptyList();
         _p2pClient.newCompanion(poolName, fileAttributes,
-                                targetState, stickyRecords, callback, false, null);
+                targetState, stickyRecords, callback, false, null);
         return callback;
     }
 
@@ -1732,10 +1732,13 @@ public class PoolV4
 
     @Command(name = "pf", hint = "return the path of a file",
             description = "Get the path corresponding to a particular " +
-                    "file by specifying the pnfsId.")
+                    "file by specifying the pnfsId. The PnfsID is the internal " +
+                    "identifier of the file within dCache. This is unique within a " +
+                    "single dCache instance and globally unique with a very high " +
+                    "probability.")
     public class PfCommand implements Callable<String>
     {
-        @Argument
+        @Argument(usage = "Specify the pnfsID of the file.")
         String pnfsId;
 
         @Override
@@ -1757,7 +1760,6 @@ public class PoolV4
 
         @Option(name = "off")
         boolean off;
-
 
         @Override
         public String call()
