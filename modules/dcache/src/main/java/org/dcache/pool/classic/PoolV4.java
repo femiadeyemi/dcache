@@ -1533,49 +1533,36 @@ public class PoolV4
     }
 
     @Command(name = "set breakeven", hint = "Set breakeven value",
-            description = "Set the breakeven parameter which is used within the space " +
-                    "cost calculation scheme. " +
-                    "This value has to be a positive number smaller than 1.0. It " +
-                    "specifies the impact of the age of the least recently used (LRU) " +
-                    "file on space cost. It the LRU file is one week old, the space " +
-                    "cost will be equal to (1 + breakeven). Note that this will not " +
-                    "be true, if the breakeven parameter has been set to a value " +
-                    "greater or equal to 1." +
-                    "")
+            description = "Set the breakeven parameter which is utilised within the space " +
+                    "cost calculation scheme. This is fundamental for calculating the age " +
+                    "of the least recently used (LSU) file.\n\n" +
+                    "If the LRU file is one week old, the space cost will be equal to " +
+                    "(1 + value). Beware that, the old scheme will be used if " +
+                    "the breakeven parameter of a pool is greater than or equal to 1.0.")
     public class SetBreakevenCommand implements Callable<String>
     {
-        @Argument(usage = "Specify the breakeven value. Default value is 0.7", required = false)
-        String breakEven;
+        @Argument(usage = "Specify the breakeven value. This value has to be " +
+                "a positive and less than 1.0.", required = false)
+        double value = _breakEven;
 
         @Override
         public String call()
         {
-            if (breakEven != null) {
-                _breakEven = Double.parseDouble(breakEven);
-            }
+            _breakEven = value;
             return "BreakEven = " + _breakEven;
         }
     }
-    /*public final static String hh_set_breakeven =
-        "[<breakEven>] # free and recoverable space";
-    public String ac_set_breakeven_$_0_1(Args args)
-    {
-        if (args.argc() > 0) {
-            _breakEven = Double.parseDouble(args.argv(0));
-        }
-        return "BreakEven = " + _breakEven;
-    }*/
 
     @Command(name = "set mover cost factor", hint = "Set mover cost factor",
             description = "The mover cost factor controls how much the number of movers " +
-                    "affects proportional pool selection.\n\n" +
+                    "affect proportional pool selection.\n\n" +
                     "Intuitively, for every 1/f movers, where f is the mover cost " +
                     "factor, the probability of choosing this pools is halved. When " +
                     "set to zero, the number of movers does not affect pool selection.")
     public class SetMoverCostFactorCommand implements Callable<String>
     {
-        @Argument(usage = "Specify the cost factor value. Mover cost " +
-                "factor must be larger than or equal to 0.0.", required = false)
+        @Argument(usage = "Specify the cost factor value. This value " +
+                "must be greater than or equal to 0.0.", required = false)
         double value = _moverCostFactor;
 
         @Override
@@ -1589,25 +1576,6 @@ public class PoolV4
             return "Cost factor is " + _moverCostFactor;
         }
     }
-    /*public final static String hh_set_mover_cost_factor =
-        "[<factor>]";
-    public final static String fh_set_mover_cost_factor =
-        "The mover cost factor controls how much the number of movers" +
-        "affects proportional pool selection.\n\n" +
-        "Intuitively, for every 1/f movers, where f is the mover cost" +
-        "factor, the probability of choosing this pools is halfed. When" +
-        "set to zero, the number of movers does not affect pool selection.";
-    public String ac_set_mover_cost_factor_$_0_1(Args args)
-    {
-        if (args.argc() > 0) {
-            double value = Double.parseDouble(args.argv(0));
-            if (value < 0.0) {
-                throw new IllegalArgumentException("Mover cost factor must be larger than or equal to 0.0");
-            }
-            _moverCostFactor = value;
-        }
-        return "Cost factor is " + _moverCostFactor;
-    }*/
 
     // /////////////////////////////////////////////////
     //
@@ -1697,88 +1665,53 @@ public class PoolV4
         }
     }
 
-    @Command(name = "pnfs register", hint = "add entry of all files into pnfs",
-            description = "Register the files on this pool into the Pnfs")
+    public void hybrid(boolean active, boolean inventory) throws IllegalArgumentException
+    {
+        synchronized (_hybridInventoryLock) {
+            if (_hybridInventoryActive) {
+                throw new IllegalArgumentException(
+                        "Hybrid inventory still active");
+            }
+            _hybridInventoryActive = active;
+            new HybridInventory(inventory);
+        }
+    }
+
+    @Command(name = "pnfs register", hint = "add entry of all files",
+            description = "Register all the files on this pool into the PNFS.")
     public class PnfsRegisterCommand implements Callable<String>
     {
         @Override
-        public String call()
+        public String call() throws IllegalArgumentException
         {
-            synchronized (_hybridInventoryLock) {
-                if (_hybridInventoryActive) {
-                    throw new IllegalArgumentException(
-                            "Hybrid inventory still active");
-                }
-                _hybridInventoryActive = true;
-                new HybridInventory(true);
-            }
+            hybrid(true, true);
             return "";
         }
     }
-    //public static final String hh_pnfs_register = " # add entry of all files into pnfs";
-    //public static final String hh_pnfs_unregister = " # remove entry of all files from pnfs";
 
-    /*public String ac_pnfs_register(Args args)
-    {
-        synchronized (_hybridInventoryLock) {
-            if (_hybridInventoryActive) {
-                throw new IllegalArgumentException(
-                        "Hybrid inventory still active");
-            }
-            _hybridInventoryActive = true;
-            new HybridInventory(true);
-        }
-        return "";
-    }*/
-
-    @Command(name = "pnfs unregister", hint = "remove entry of all files from pnfs",
-            description = "Unregister the files on this pool from the pnfs.")
+    @Command(name = "pnfs unregister", hint = "remove entry of all files",
+            description = "Unregister all the files on this pool from the PNFS.")
     public class PnfsUnregisterCommand implements Callable<String>
     {
         @Override
-        public String call()
+        public String call() throws IllegalArgumentException
         {
-            synchronized (_hybridInventoryLock) {
-                if (_hybridInventoryActive) {
-                    throw new IllegalArgumentException(
-                            "Hybrid inventory still active");
-                }
-                _hybridInventoryActive = true;
-                new HybridInventory(false);
-            }
+            hybrid(true, false);
             return "";
         }
     }
-    /*public String ac_pnfs_unregister(Args args)
-    {
-        synchronized (_hybridInventoryLock) {
-            if (_hybridInventoryActive) {
-                throw new IllegalArgumentException(
-                        "Hybrid inventory still active");
-            }
-            _hybridInventoryActive = true;
-            new HybridInventory(false);
-        }
-        return "";
-    }*/
 
-    @Command(name = "run hybrid inventory", hint = "", description = "")
+    @Command(name = "run hybrid inventory", hint = "start an hybrid inventory",
+            description = "")
     public class RunHybridInventoryCommand implements Callable<String>
     {
         @Option(name = "destroy")
         boolean destroy;
 
         @Override
-        public String call()
+        public String call() throws IllegalArgumentException
         {
-            synchronized (_hybridInventoryLock) {
-                if (_hybridInventoryActive) {
-                    throw new IllegalArgumentException(
-                            "Hybrid inventory still active");
-                }
-                _hybridInventoryActive = true;
-                new HybridInventory(!destroy);
-            }
+            hybrid(true, !destroy);
             return "";
         }
     }
@@ -1797,9 +1730,9 @@ public class PoolV4
         return "";
     }*/
 
-    @Command(name = "pf", hint = "return the path of a pnfs",
+    @Command(name = "pf", hint = "return the path of a file",
             description = "Get the path corresponding to a particular " +
-                    "pnfs by specifying the pnfsId.")
+                    "file by specifying the pnfsId.")
     public class PfCommand implements Callable<String>
     {
         @Argument
@@ -1811,12 +1744,6 @@ public class PoolV4
             return _pnfs.getPathByPnfsId(new PnfsId(pnfsId)).toString();
         }
     }
-    /*public static final String hh_pf = "<pnfsId>";
-
-    public String ac_pf_$_1(Args args) throws CacheException, IllegalArgumentException
-    {
-        return _pnfs.getPathByPnfsId(new PnfsId(args.argv(0))).toString();
-    }*/
 
     @Command(name = "set replication", hint = "",
             description = "")
